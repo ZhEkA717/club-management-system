@@ -6,12 +6,10 @@ import { CheckboxModule } from 'primeng/checkbox';
 import { InputTextModule } from 'primeng/inputtext';
 import { PasswordModule } from 'primeng/password';
 import { RippleModule } from 'primeng/ripple';
-import { AppFloatingConfigurator } from '@/layout/component/app.floatingconfigurator';
+import { AppFloatingConfigurator } from '../../layout/component/app.floatingconfigurator';
 import { HttpClient } from '@angular/common/http';
-import { AuthService } from '@/pages/auth/auth.service';
-import { MessageService } from 'primeng/api';
-import { MessageModule } from 'primeng/message';
-import { Toast } from 'primeng/toast';
+import { catchError, map, tap } from 'rxjs/operators';
+import { of } from 'rxjs';
 
 export interface IGeneralResponse<T> {
   success: boolean;
@@ -33,10 +31,9 @@ export interface User {
 }
 
 @Component({
-  selector: 'app-login',
+  selector: 'app-registration',
   standalone: true,
   imports: [
-    MessageModule,
     ButtonModule,
     CheckboxModule,
     InputTextModule,
@@ -45,11 +42,8 @@ export interface User {
     RouterModule,
     RippleModule,
     AppFloatingConfigurator,
-    Toast,
   ],
-  providers: [MessageService],
   template: `
-    <p-toast />
     <app-floating-configurator />
     <div
       class="bg-surface-50 dark:bg-surface-950 flex items-center justify-center min-h-screen min-w-screen overflow-hidden"
@@ -99,7 +93,7 @@ export interface User {
               <div class="text-surface-900 dark:text-surface-0 text-3xl font-medium mb-4">
                 Welcome to Club Management System!
               </div>
-              <span class="text-muted-color font-medium">Sign in to continue</span>
+              <span class="text-muted-color font-medium">Sign up to continue</span>
             </div>
 
             <div>
@@ -115,6 +109,34 @@ export interface User {
                 placeholder="Email address"
                 class="w-full md:w-120 mb-8"
                 [(ngModel)]="email"
+              />
+
+              <label
+                for="firstName"
+                class="block text-surface-900 dark:text-surface-0 text-xl font-medium mb-2"
+                >First Name</label
+              >
+              <input
+                pInputText
+                id="firstName"
+                type="text"
+                placeholder="First name"
+                class="w-full md:w-120 mb-8"
+                [(ngModel)]="firstName"
+              />
+
+              <label
+                for="lastName"
+                class="block text-surface-900 dark:text-surface-0 text-xl font-medium mb-2"
+                >Last Name</label
+              >
+              <input
+                pInputText
+                id="email1"
+                type="text"
+                placeholder="Last name"
+                class="w-full md:w-120 mb-8"
+                [(ngModel)]="lastName"
               />
 
               <label
@@ -138,8 +160,8 @@ export interface User {
                 >
               </div>
               <p-button
-                (onClick)="login()"
-                label="Sign In"
+                (onClick)="registration()"
+                label="Sign Up"
                 styleClass="w-full"
               ></p-button>
             </div>
@@ -149,27 +171,16 @@ export interface User {
     </div>
   `,
 })
-export class Login {
+export class Registration {
   email: string = '';
-
+  firstName: string = '';
+  lastName: string = '';
   password: string = '';
 
   private httpClient = inject(HttpClient);
   private router = inject(Router);
-  private authService = inject(AuthService);
-  private messageService = inject(MessageService);
 
-  login() {
-    this.authService.login(this.email, this.password).subscribe((res) => {
-      if (this.authService.isAuthenticated()) {
-        this.router.navigate(['/']).then();
-      } else {
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Error Message',
-          detail: 'Validation failed',
-        });
-      }
-    });
+  registration() {
+
   }
 }
