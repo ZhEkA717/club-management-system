@@ -30,12 +30,12 @@ export class AuthService {
           if (!data) return null;
           return data;
         }),
-        tap((data) => {
-          if (data?.token) {
-            this.setToken(data.token);
-          }
-        }),
         catchError(() => of(null)),
+          tap((data) => {
+              if (data?.token) {
+                  this.setToken(data.token);
+              }
+          }),
       );
   }
 
