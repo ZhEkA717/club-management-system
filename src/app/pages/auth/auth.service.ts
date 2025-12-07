@@ -2,17 +2,15 @@ import { inject, Injectable } from '@angular/core';
 import { catchError, map, tap } from 'rxjs/operators';
 import { of } from 'rxjs';
 import { IGeneralResponse, User } from '@/pages/auth/login';
-import { HttpClient } from '@angular/common/http';
-import { Router } from '@angular/router';
-import { MessageService } from 'primeng/api';
+import { HttpClient, HttpContext, HttpContextToken } from '@angular/common/http';
+
+export const SKIP_AUTH = new HttpContextToken(() => false);
 
 @Injectable({
   providedIn: 'root',
 })
 export class AuthService {
   private httpClient = inject(HttpClient);
-  private router = inject(Router);
-
   // Авторизация
   login(email: string, password: string) {
     return this.httpClient
@@ -31,39 +29,44 @@ export class AuthService {
           return data;
         }),
         catchError(() => of(null)),
-          tap((data) => {
-              if (data?.token) {
-                  this.setToken(data.token);
-              }
-          }),
+        tap((data) => {
+          if (data?.token) {
+            this.setToken(data.token);
+          }
+        }),
       );
   }
 
   registration(email: string, firstName: string, lastName: string, password: string) {
-      this.httpClient
-          .post<
-              IGeneralResponse<{
-                  user: User;
-                  token: string;
-              }>
-          >('http://localhost:8000/server/api/auth/login', {
-              email,
-              firstName,
-              lastName,
-              password,
-          })
-          .pipe(
-              map(({ data }) => {
-                  if (!data) return null;
-                  return data;
-              }),
-              tap((data) => {
-                  if(data?.token) {
-                      this.setToken(data.token)
-                  }
-              }),
-              catchError(() => of(null)),
-          )
+    const context = new HttpContext().set(SKIP_AUTH, true);
+    return this.httpClient
+      .post<
+        IGeneralResponse<{
+          user: User;
+          token: string;
+        }>
+      >(
+        'http://localhost:8000/server/api/auth/register',
+        {
+          email,
+          first_name: firstName,
+          last_name: lastName,
+          password,
+        },
+        { context },
+      )
+      .pipe(
+        map(({ data }) => {
+          if (!data) return null;
+          return data;
+        }),
+        tap((data) => {
+          if (data?.token) {
+            this.setToken(data.token);
+          }
+        }),
+        catchError(() => of(null)),
+      );
   }
 
   // Сохранить токен

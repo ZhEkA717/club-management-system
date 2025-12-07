@@ -1,5 +1,5 @@
 import { Component, inject } from '@angular/core';
-import { FormControl, FormGroup, FormsModule } from '@angular/forms';
+import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { CheckboxModule } from 'primeng/checkbox';
@@ -7,7 +7,6 @@ import { InputTextModule } from 'primeng/inputtext';
 import { PasswordModule } from 'primeng/password';
 import { RippleModule } from 'primeng/ripple';
 import { AppFloatingConfigurator } from '@/layout/component/app.floatingconfigurator';
-import { HttpClient } from '@angular/common/http';
 import { AuthService } from '@/pages/auth/auth.service';
 import { MessageService } from 'primeng/api';
 import { MessageModule } from 'primeng/message';
@@ -133,8 +132,10 @@ export interface User {
               ></p-password>
 
               <div class="flex items-center justify-between mt-2 mb-8 gap-8">
-                <span class="font-medium no-underline ml-2 text-right cursor-pointer text-primary"
-                  >Forgot password?</span
+                <span
+                  routerLink="/auth/registration"
+                  class="font-medium no-underline ml-2 text-right cursor-pointer text-primary"
+                  >Sign up?</span
                 >
               </div>
               <p-button
@@ -154,7 +155,6 @@ export class Login {
 
   password: string = '';
 
-  private httpClient = inject(HttpClient);
   private router = inject(Router);
   private authService = inject(AuthService);
   private messageService = inject(MessageService);

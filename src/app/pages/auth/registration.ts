@@ -1,15 +1,15 @@
 import { Component, inject } from '@angular/core';
-import { FormControl, FormGroup, FormsModule } from '@angular/forms';
+import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { CheckboxModule } from 'primeng/checkbox';
 import { InputTextModule } from 'primeng/inputtext';
 import { PasswordModule } from 'primeng/password';
 import { RippleModule } from 'primeng/ripple';
-import { AppFloatingConfigurator } from '../../layout/component/app.floatingconfigurator';
-import { HttpClient } from '@angular/common/http';
-import { catchError, map, tap } from 'rxjs/operators';
-import { of } from 'rxjs';
+import { AppFloatingConfigurator } from '@/layout/component/app.floatingconfigurator';
+import { AuthService } from '@/pages/auth/auth.service';
+import { MessageService } from 'primeng/api';
+import { Toast } from 'primeng/toast';
 
 export interface IGeneralResponse<T> {
   success: boolean;
@@ -33,6 +33,7 @@ export interface User {
 @Component({
   selector: 'app-registration',
   standalone: true,
+  providers: [MessageService],
   imports: [
     ButtonModule,
     CheckboxModule,
@@ -42,8 +43,10 @@ export interface User {
     RouterModule,
     RippleModule,
     AppFloatingConfigurator,
+    Toast,
   ],
   template: `
+    <p-toast />
     <app-floating-configurator />
     <div
       class="bg-surface-50 dark:bg-surface-950 flex items-center justify-center min-h-screen min-w-screen overflow-hidden"
@@ -156,7 +159,7 @@ export interface User {
 
               <div class="flex items-center justify-between mt-2 mb-8 gap-8">
                 <span class="font-medium no-underline ml-2 text-right cursor-pointer text-primary"
-                  >Forgot password?</span
+                  >Sign in?</span
                 >
               </div>
               <p-button
@@ -177,10 +180,23 @@ export class Registration {
   lastName: string = '';
   password: string = '';
 
-  private httpClient = inject(HttpClient);
+  private authService = inject(AuthService);
   private router = inject(Router);
+  private messageService = inject(MessageService);
 
   registration() {
-
+    this.authService
+      .registration(this.email, this.firstName, this.lastName, this.password)
+      .subscribe((res) => {
+        if (res?.token) {
+          this.router.navigate(['/']).then();
+        } else {
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Error Message',
+            detail: 'Validation failed',
+          });
+        }
+      });
   }
 }

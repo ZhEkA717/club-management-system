@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpInterceptor, HttpRequest, HttpHandler, HttpEvent, HttpErrorResponse } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
-import { AuthService } from '@/pages/auth/auth.service';
+import { AuthService, SKIP_AUTH } from '@/pages/auth/auth.service';
 import { catchError } from 'rxjs/operators';
 import { Router } from '@angular/router';
 
@@ -15,7 +15,14 @@ export class TokenInterceptor implements HttpInterceptor {
     intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
         const token = this.auth.getToken();
 
+
         let cloned = req;
+        const skipAuth = req.context.get(SKIP_AUTH);
+        console.log(skipAuth);
+        if(skipAuth) {
+            return next.handle(req);
+        }
+
         if (token) {
             cloned = req.clone({
                 setHeaders: {
