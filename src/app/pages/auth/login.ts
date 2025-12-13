@@ -46,7 +46,6 @@ export interface User {
     RippleModule,
     AppFloatingConfigurator,
     Toast,
-    ConfirmPopup,
   ],
   providers: [MessageService, ConfirmationService],
   template: `

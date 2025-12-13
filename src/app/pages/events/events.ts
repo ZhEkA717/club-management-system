@@ -1,8 +1,14 @@
 import { Component, DestroyRef, inject, OnInit, signal, ViewChild } from '@angular/core';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { Table, TableModule } from 'primeng/table';
-import { CommonModule } from '@angular/common';
-import { FormControl, FormsModule } from '@angular/forms';
+import { CommonModule, DatePipe } from '@angular/common';
+import {
+  FormControl,
+  FormGroup,
+  FormsModule,
+  ReactiveFormsModule,
+  Validators,
+} from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { RippleModule } from 'primeng/ripple';
 import { ToastModule } from 'primeng/toast';
@@ -21,12 +27,23 @@ import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { Product, ProductService } from '../service/product.service';
 import { HttpClient } from '@angular/common/http';
 import { IGeneralResponse } from '@/pages/auth/login';
-import { catchError, delay, distinctUntilChanged, finalize, map, switchMap } from 'rxjs/operators';
+import {
+  catchError,
+  delay,
+  distinctUntilChanged,
+  finalize,
+  map,
+  switchMap,
+  tap,
+} from 'rxjs/operators';
 import { debounceTime, of } from 'rxjs';
 import { Skeleton } from 'primeng/skeleton';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { UserReportRecord } from '@/pages/members/members';
 import { ProgressBar } from 'primeng/progressbar';
+import { DatePickerModule } from 'primeng/datepicker';
+import { MultiSelectModule } from 'primeng/multiselect';
+import { ProgressSpinner } from 'primeng/progressspinner';
+import { BlockUI } from 'primeng/blockui';
 
 interface Column {
   field: string;
@@ -63,8 +80,19 @@ interface ExportColumn {
     ConfirmDialogModule,
     Skeleton,
     ProgressBar,
+    DatePickerModule,
+    MultiSelectModule,
+    ProgressSpinner,
+    ReactiveFormsModule,
+    BlockUI,
   ],
   template: `
+    <p-blockUI [blocked]="globalLoading()">
+      <div style="display: grid; height: 100%; width: 100%; place-items: center">
+        <p-progressSpinner></p-progressSpinner>
+      </div>
+    </p-blockUI>
+
     <p-toolbar styleClass="mb-6">
       <ng-template #start>
         <p-button
@@ -175,8 +203,11 @@ interface ExportColumn {
                         : 0
                     "
                   >
-                      <ng-template #content let-value>
-                      </ng-template>
+                    <ng-template
+                      #content
+                      let-value
+                    >
+                    </ng-template>
                   </p-progressbar>
                 </div>
               </div>
@@ -190,18 +221,20 @@ interface ExportColumn {
             <td>{{ event.ticket_price }} {{ event.currency }}</td>
             <td>
               <p-button
+                [disabled]="event.event_status !== 'scheduled'"
                 icon="pi pi-pencil"
                 class="mr-2"
                 [rounded]="true"
                 [outlined]="true"
-                (click)="editProduct(product)"
+                (click)="editProduct(event)"
               />
+
               <p-button
                 icon="pi pi-trash"
                 severity="danger"
                 [rounded]="true"
                 [outlined]="true"
-                (click)="deleteProduct(product)"
+                (click)="deleteProduct(event)"
               />
             </td>
           </tr>
@@ -212,63 +245,121 @@ interface ExportColumn {
     <p-dialog
       [(visible)]="productDialog"
       [style]="{ width: '450px' }"
-      header="Product Details"
+      [header]="headerDialog()"
       [modal]="true"
     >
       <ng-template #content>
-        <div class="flex flex-col gap-6">
-          <img
-            [src]="'https://primefaces.org/cdn/primeng/images/demo/product/' + product.image"
-            [alt]="product.image"
-            class="block m-auto pb-4"
-            *ngIf="product.image"
-          />
+        <div
+          [formGroup]="form"
+          style="height: calc(100vh - 420px)"
+          class="flex flex-col gap-6"
+        >
           <div>
             <label
               for="name"
               class="block font-bold mb-3"
-              >Name</label
+              >Event name</label
             >
             <input
+              [formControl]="form.controls.eventName"
               type="text"
               pInputText
               id="name"
-              [(ngModel)]="product.name"
               required
               autofocus
               fluid
             />
             <small
               class="text-red-500"
-              *ngIf="submitted && !product.name"
-              >Name is required.</small
+              *ngIf="submitted && !form.value.eventName"
+              >Event name is required.</small
             >
           </div>
           <div>
             <label
-              for="description"
+              for="club"
               class="block font-bold mb-3"
-              >Description</label
+              >Club name</label
             >
-            <textarea
-              id="description"
-              pTextarea
-              [(ngModel)]="product.description"
-              required
-              rows="3"
-              cols="20"
+            <p-select
+              [formControl]="form.controls.clubName"
+              inputId="club"
+              [options]="clubs()"
+              optionLabel="name"
+              optionValue="id"
+              placeholder="Select a club"
               fluid
-            ></textarea>
-          </div>
+            />
 
+            <small
+              class="text-red-500"
+              *ngIf="submitted && !form.value.clubName"
+              >Club name is required.</small
+            >
+          </div>
+          <div style="display: flex; gap: 5px">
+            <div class="flex-auto">
+              <label
+                for="buttondisplay"
+                class="font-bold block mb-2"
+              >
+                Date
+              </label>
+              <p-datepicker
+                dateFormat="dd.mm.yy"
+                [formControl]="form.controls.date"
+                [showIcon]="true"
+                inputId="buttondisplay"
+                [showOnFocus]="false"
+              />
+            </div>
+
+            <div class="flex-auto">
+              <label
+                for="templatedisplay"
+                class="font-bold block mb-2"
+              >
+                Time
+              </label>
+              <p-datepicker
+                [formControl]="form.controls.time"
+                [iconDisplay]="'input'"
+                [showIcon]="true"
+                [timeOnly]="true"
+                inputId="templatedisplay"
+              >
+                <ng-template
+                  #inputicon
+                  let-clickCallBack="clickCallBack"
+                >
+                  <i
+                    class="pi pi-clock"
+                    (click)="clickCallBack($event)"
+                  ></i>
+                </ng-template>
+              </p-datepicker>
+            </div>
+          </div>
+          <div>
+            <label
+              for="quantity"
+              class="block font-bold mb-3"
+              >Quantity</label
+            >
+            <p-inputnumber
+              [formControl]="form.controls.quantity"
+              id="quantity"
+              fluid
+            ></p-inputnumber>
+          </div>
           <div>
             <label
               for="inventoryStatus"
               class="block font-bold mb-3"
-              >Inventory Status</label
+              >Status</label
             >
             <p-select
-              [(ngModel)]="product.inventoryStatus"
+              [formControl]="form.controls.status"
               inputId="inventoryStatus"
               [options]="statuses"
               optionLabel="label"
@@ -276,48 +367,6 @@ interface ExportColumn {
               placeholder="Select a Status"
               fluid
             />
-          </div>
-
-          <div>
-            <span class="block font-bold mb-4">Category</span>
-            <div class="grid grid-cols-12 gap-4">
-              <div class="flex items-center gap-2 col-span-6">
-                <p-radiobutton
-                  id="category1"
-                  name="category"
-                  value="Accessories"
-                  [(ngModel)]="product.category"
-                />
-                <label for="category1">Accessories</label>
-              </div>
-              <div class="flex items-center gap-2 col-span-6">
-                <p-radiobutton
-                  id="category2"
-                  name="category"
-                  value="Clothing"
-                  [(ngModel)]="product.category"
-                />
-                <label for="category2">Clothing</label>
-              </div>
-              <div class="flex items-center gap-2 col-span-6">
-                <p-radiobutton
-                  id="category3"
-                  name="category"
-                  value="Electronics"
-                  [(ngModel)]="product.category"
-                />
-                <label for="category3">Electronics</label>
-              </div>
-              <div class="flex items-center gap-2 col-span-6">
-                <p-radiobutton
-                  id="category4"
-                  name="category"
-                  value="Fitness"
-                  [(ngModel)]="product.category"
-                />
-                <label for="category4">Fitness</label>
-              </div>
-            </div>
           </div>
 
           <div class="grid grid-cols-12 gap-4">
@@ -328,25 +377,26 @@ interface ExportColumn {
                 >Price</label
               >
               <p-inputnumber
+                [formControl]="form.controls.price"
                 id="price"
-                [(ngModel)]="product.price"
                 mode="currency"
-                currency="USD"
+                [currency]="'USD'"
                 locale="en-US"
                 fluid
               />
             </div>
             <div class="col-span-6">
               <label
-                for="quantity"
+                for="currency"
                 class="block font-bold mb-3"
-                >Quantity</label
+                >Currency</label
               >
-              <p-inputnumber
-                id="quantity"
-                [(ngModel)]="product.quantity"
+              <input
+                pInputText
+                [formControl]="form.controls.cureency"
+                id="currency"
                 fluid
-              ></p-inputnumber>
+              />
             </div>
           </div>
         </div>
@@ -360,6 +410,7 @@ interface ExportColumn {
           (click)="hideDialog()"
         />
         <p-button
+          [disabled]="form.invalid"
           label="Save"
           icon="pi pi-check"
           (click)="saveProduct()"
@@ -369,12 +420,13 @@ interface ExportColumn {
 
     <p-confirmdialog [style]="{ width: '450px' }"></p-confirmdialog>
   `,
-  providers: [MessageService, ProductService, ConfirmationService],
+  providers: [MessageService, ProductService, ConfirmationService, DatePipe],
 })
 export class Events implements OnInit {
   productDialog: boolean = false;
 
   products = signal<Product[]>([]);
+  headerDialog = signal('');
 
   product!: Product;
 
@@ -382,7 +434,12 @@ export class Events implements OnInit {
 
   submitted: boolean = false;
 
-  statuses!: any[];
+  statuses: any = [
+    { label: 'scheduled', value: 'scheduled' },
+    { label: 'cancelled', value: 'cancelled' },
+    { label: 'completed', value: 'completed' },
+    { label: 'ongoing', value: 'ongoing' },
+  ];
 
   @ViewChild('dt') dt!: Table;
 
@@ -419,12 +476,15 @@ export class Events implements OnInit {
       header: 'Events',
     },
   ];
+  clubs = signal<Partial<Club>[]>([]);
 
   loading = signal(true);
   searchLoading = signal(false);
   private destroyRef = inject(DestroyRef);
 
   events = signal<EventReport[]>([]);
+  searchValue = new FormControl<string>('', { nonNullable: true });
+  globalLoading = signal<boolean>(false);
   userRoleSaverity: any = {
     member: 'info',
     admin: 'danger',
@@ -437,6 +497,18 @@ export class Events implements OnInit {
     cancelled: 'danger',
   };
 
+  form: CreateEventFormType = new FormGroup({
+    id: new FormControl<string | null>(null),
+    eventName: new FormControl<string | null>(null, Validators.required),
+    clubName: new FormControl<string | null>(null, Validators.required),
+    date: new FormControl<string | null>(null, Validators.required),
+    time: new FormControl<string | null>(null, Validators.required),
+    quantity: new FormControl<string | null>(null, Validators.required),
+    status: new FormControl<string | null>(null, Validators.required),
+    price: new FormControl<string | null>(null),
+    cureency: new FormControl<string | null>(null),
+  });
+
   private httpClient = inject(HttpClient);
 
   constructor(
@@ -444,6 +516,9 @@ export class Events implements OnInit {
     private messageService: MessageService,
     private confirmationService: ConfirmationService,
   ) {
+    this.form.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((res) => {
+      console.log(res);
+    });
     this.searchValue.valueChanges
       .pipe(
         takeUntilDestroyed(this.destroyRef),
@@ -480,6 +555,48 @@ export class Events implements OnInit {
     this.getEvents();
   }
 
+  createEvent() {
+    const form = this.form.value;
+    this.globalLoading.set(true);
+    return this.httpClient
+      .post('http://localhost:8000/server/api/events', {
+        title: form.eventName,
+        club_id: form.clubName,
+        event_date: `${this.datePipe.transform(form.date, 'yyyy-MM-dd')} ${this.datePipe.transform(form.date, 'hh:mm:ss')}`,
+        max_participants: form.quantity,
+        event_status: form.status,
+        ticket_price: form.price,
+        currency: form.cureency,
+      })
+      .pipe(
+        delay(500),
+        catchError(() => of(null)),
+        tap(() => this.getEvents()),
+        finalize(() => this.globalLoading.set(false)),
+      );
+  }
+
+  editEvent() {
+    const form = this.form.value;
+    this.globalLoading.set(true);
+    return this.httpClient
+      .patch(`http://localhost:8000/server/api/events/${form.id}`, {
+        title: form.eventName,
+        club_id: form.clubName,
+        event_date: `${this.datePipe.transform(form.date, 'yyyy-MM-dd')} ${this.datePipe.transform(form.date, 'hh:mm:ss')}`,
+        max_participants: form.quantity,
+        event_status: form.status,
+        ticket_price: form.price,
+        currency: form.cureency,
+      })
+      .pipe(
+        delay(500),
+        catchError(() => of(null)),
+        tap(() => this.getEvents()),
+        finalize(() => this.globalLoading.set(false)),
+      );
+  }
+
   getEvents() {
     this.loading.set(true);
     this.httpClient
@@ -488,7 +605,7 @@ export class Events implements OnInit {
         delay(500),
         map(({ data }) => {
           if (!data) return <EventReport[]>[];
-          return data;
+          return data.reverse();
         }),
         catchError(() => of(<EventReport[]>[])),
         finalize(() => this.loading.set(false)),
@@ -496,21 +613,29 @@ export class Events implements OnInit {
       .subscribe((resp) => this.events.set(resp));
   }
 
+  getClubs() {
+    this.globalLoading.set(true);
+    return this.httpClient
+      .get<IGeneralResponse<{ clubs: Club[] }>>('http://localhost:8000/server/api/clubs')
+      .pipe(
+        delay(500),
+        map(({ data }) => {
+          if (!data) return <Club[]>[];
+          return data.clubs;
+        }),
+        catchError(() => of(<Club[]>[])),
+        tap((resp) => this.clubs.set(resp)),
+        finalize(() => this.globalLoading.set(false)),
+      );
+  }
+
   loadDemoData() {
     this.productService.getProducts().then((data) => {
       this.products.set(data);
     });
 
-    this.statuses = [
-      { label: 'INSTOCK', value: 'instock' },
-      { label: 'LOWSTOCK', value: 'lowstock' },
-      { label: 'OUTOFSTOCK', value: 'outofstock' },
-    ];
-
     this.exportColumns = this.cols.map((col) => ({ title: col.header, dataKey: col.field }));
   }
-
-  searchValue = new FormControl<string>('', { nonNullable: true });
 
   onGlobalFilter(event: Event) {
     const inputEl = event.target as HTMLInputElement;
@@ -518,14 +643,32 @@ export class Events implements OnInit {
   }
 
   openNew() {
-    this.product = {};
-    this.submitted = false;
-    this.productDialog = true;
+    this.getClubs().subscribe(() => {
+      this.headerDialog.set('Create event');
+      this.product = {};
+      this.submitted = false;
+      this.productDialog = true;
+    });
   }
 
-  editProduct(product: Product) {
-    this.product = { ...product };
-    this.productDialog = true;
+  datePipe = inject(DatePipe);
+
+  editProduct(event: EventReport) {
+    this.getClubs().subscribe(() => {
+      this.headerDialog.set('Edit event');
+      this.form.patchValue({
+        id: event.event_id,
+        eventName: event.event_name,
+        clubName: event.club_id,
+        price: event.ticket_price,
+        status: event.event_status,
+        quantity: event.max_participants?.toString(),
+        cureency: event.currency,
+        date: this.datePipe.transform(event.event_datetime, 'dd.MM.yyyy'),
+        time: this.datePipe.transform(event.event_datetime, 'shortTime'),
+      });
+      this.productDialog = true;
+    });
   }
 
   deleteSelectedProducts() {
@@ -551,79 +694,43 @@ export class Events implements OnInit {
     this.submitted = false;
   }
 
-  deleteProduct(product: Product) {
+  deleteProduct(event: EventReport) {
     this.confirmationService.confirm({
-      message: 'Are you sure you want to delete ' + product.name + '?',
+      message: 'Are you sure you want to delete ' + event.event_name + '?',
       header: 'Confirm',
       icon: 'pi pi-exclamation-triangle',
       accept: () => {
-        this.products.set(this.products().filter((val) => val.id !== product.id));
-        this.product = {};
-        this.messageService.add({
-          severity: 'success',
-          summary: 'Successful',
-          detail: 'Product Deleted',
-          life: 3000,
-        });
+        this.globalLoading.set(true);
+        this.httpClient
+          .delete(`http://localhost:8000/server/api/events/${event.event_id}`)
+          .pipe(
+            delay(500),
+            catchError(() => of(null)),
+            finalize(() => this.globalLoading.set(false)),
+          )
+          .subscribe();
       },
     });
   }
 
-  findIndexById(id: string): number {
-    let index = -1;
-    for (let i = 0; i < this.products().length; i++) {
-      if (this.products()[i].id === id) {
-        index = i;
-        break;
-      }
-    }
-
-    return index;
-  }
-
-  createId(): string {
-    let id = '';
-    var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    for (var i = 0; i < 5; i++) {
-      id += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return id;
-  }
-
   saveProduct() {
-    this.submitted = true;
-    let _products = this.products();
-    if (this.product.name?.trim()) {
-      if (this.product.id) {
-        _products[this.findIndexById(this.product.id)] = this.product;
-        this.products.set([..._products]);
-        this.messageService.add({
-          severity: 'success',
-          summary: 'Successful',
-          detail: 'Product Updated',
-          life: 3000,
-        });
-      } else {
-        this.product.id = this.createId();
-        this.product.image = 'product-placeholder.svg';
-        this.messageService.add({
-          severity: 'success',
-          summary: 'Successful',
-          detail: 'Product Created',
-          life: 3000,
-        });
-        this.products.set([..._products, this.product]);
-      }
-
-      this.productDialog = false;
-      this.product = {};
+    if (this.headerDialog() === 'Create event') {
+      this.createEvent().subscribe(() => {
+        this.productDialog = false;
+      });
+    } else {
+      this.editEvent().subscribe(() => {
+        this.productDialog = false;
+      });
     }
   }
 }
 
 export interface EventReport {
+  event_id: string;
   event_name: string;
   club_name: string;
+  club_id: string;
   event_datetime: string; // или Date если будет преобразование
   max_participants: number;
   event_status: 'scheduled' | 'ongoing' | 'completed' | 'cancelled';
@@ -631,3 +738,31 @@ export interface EventReport {
   currency: string;
   registered_count: number;
 }
+
+export interface Club {
+  id: number;
+  name: string;
+  status: 'Active' | 'Inactive';
+  description: string;
+  category: string;
+  email: string;
+  phone: string;
+  captain_id: number | null;
+  vice_captain_id: number | null;
+  created_at: string;
+  updated_at: string;
+  captain_name: string | null;
+  vice_captain_name: string | null;
+}
+
+export type CreateEventFormType = FormGroup<{
+  id: FormControl<string | null>;
+  eventName: FormControl<string | null>;
+  clubName: FormControl<string | null>;
+  date: FormControl<string | null>;
+  time: FormControl<string | null>;
+  quantity: FormControl<string | null>;
+  status: FormControl<string | null>;
+  price: FormControl<string | null>;
+  cureency: FormControl<string | null>;
+}>;
