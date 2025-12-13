@@ -1,8 +1,8 @@
-import { Component, inject, OnInit, signal, ViewChild } from '@angular/core';
+import { Component, DestroyRef, inject, OnInit, signal, ViewChild } from '@angular/core';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { Table, TableModule } from 'primeng/table';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { FormControl, FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { RippleModule } from 'primeng/ripple';
 import { ToastModule } from 'primeng/toast';
@@ -21,9 +21,12 @@ import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { Product, ProductService } from '../service/product.service';
 import { HttpClient } from '@angular/common/http';
 import { IGeneralResponse } from '@/pages/auth/login';
-import { catchError, delay, finalize, map } from 'rxjs/operators';
-import { of } from 'rxjs';
+import { catchError, delay, distinctUntilChanged, finalize, map, switchMap } from 'rxjs/operators';
+import { debounceTime, of } from 'rxjs';
 import { Skeleton } from 'primeng/skeleton';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { UserReportRecord } from '@/pages/members/members';
+import { ProgressBar } from 'primeng/progressbar';
 
 interface Column {
   field: string;
@@ -59,6 +62,7 @@ interface ExportColumn {
     IconFieldModule,
     ConfirmDialogModule,
     Skeleton,
+    ProgressBar,
   ],
   template: `
     <p-toolbar styleClass="mb-6">
@@ -115,9 +119,12 @@ interface ExportColumn {
               <input
                 pInputText
                 type="text"
-                (input)="onGlobalFilter(dt, $event)"
+                (input)="onGlobalFilter($event)"
                 placeholder="Search..."
               />
+              @if (searchLoading()) {
+                <p-inputicon class="pi pi-spin pi-spinner" />
+              }
             </p-iconfield>
           </div>
         </ng-template>
@@ -145,20 +152,34 @@ interface ExportColumn {
             </td>
             <td style="min-width: 12rem">{{ event.event_name }}</td>
             <td style="min-width: 15rem">{{ event.club_name }}</td>
-              <td style="min-width: 16rem">
-                  <div style="display: flex; flex-direction: column; gap: 2px">
-                      <div style="display: flex; gap: 12px">
-                          <i class="pi pi-calendar"></i>
-                          {{ event.event_datetime | date }}
-                      </div>
-                      <div style="display: flex; gap: 12px; color: gray">
-                          <i class="pi pi-clock"></i>
-                          {{ event.event_datetime | date: 'HH:mm' }}
-                      </div>
-                  </div>
-              </td>
             <td>
-              {{event.registered_count}} / {{event.max_participants}}
+              <div style="display: flex; flex-direction: column; gap: 2px">
+                <div style="display: flex; gap: 12px">
+                  <i class="pi pi-calendar"></i>
+                  {{ event.event_datetime | date }}
+                </div>
+                <div style="display: flex; gap: 12px; color: gray">
+                  <i class="pi pi-clock"></i>
+                  {{ event.event_datetime | date: 'HH:mm' }}
+                </div>
+              </div>
+            </td>
+            <td>
+              <div style="display: flex; flex-direction: column; gap: 5px; text-align: center;">
+                {{ event.registered_count }} / {{ event.max_participants }}
+                <div>
+                  <p-progressbar
+                    [value]="
+                      event.registered_count
+                        ? ((event.registered_count / event.max_participants) * 100).toFixed(1)
+                        : 0
+                    "
+                  >
+                      <ng-template #content let-value>
+                      </ng-template>
+                  </p-progressbar>
+                </div>
+              </div>
             </td>
             <td>
               <p-tag
@@ -166,9 +187,7 @@ interface ExportColumn {
                 [severity]="eventStatusSaverity[event.event_status]"
               ></p-tag>
             </td>
-            <td>
-              {{ event.ticket_price }} {{ event.currency }}
-            </td>
+            <td>{{ event.ticket_price }} {{ event.currency }}</td>
             <td>
               <p-button
                 icon="pi pi-pencil"
@@ -402,6 +421,8 @@ export class Events implements OnInit {
   ];
 
   loading = signal(true);
+  searchLoading = signal(false);
+  private destroyRef = inject(DestroyRef);
 
   events = signal<EventReport[]>([]);
   userRoleSaverity: any = {
@@ -410,11 +431,11 @@ export class Events implements OnInit {
     club_owner: 'warn',
   };
   eventStatusSaverity: any = {
-      scheduled: 'warn',
-      ongoing: 'info',
-      completed: 'success',
-      cancelled: 'danger'
-  }
+    scheduled: 'warn',
+    ongoing: 'info',
+    completed: 'success',
+    cancelled: 'danger',
+  };
 
   private httpClient = inject(HttpClient);
 
@@ -422,7 +443,33 @@ export class Events implements OnInit {
     private productService: ProductService,
     private messageService: MessageService,
     private confirmationService: ConfirmationService,
-  ) {}
+  ) {
+    this.searchValue.valueChanges
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        distinctUntilChanged(),
+        debounceTime(400),
+        switchMap((value) => {
+          this.searchLoading.set(true);
+          return this.httpClient
+            .get<
+              IGeneralResponse<{
+                events: EventReport[];
+              }>
+            >(`http://localhost:8000/server/api/events/search?query=${value}`)
+            .pipe(
+              delay(500),
+              map(({ data }) => {
+                if (!data) return <EventReport[]>[];
+                return data.events;
+              }),
+              catchError(() => of(<EventReport[]>[])),
+              finalize(() => this.searchLoading.set(false)),
+            );
+        }),
+      )
+      .subscribe((resp) => this.events.set(resp));
+  }
 
   exportCSV() {
     this.dt.exportCSV();
@@ -436,9 +483,7 @@ export class Events implements OnInit {
   getEvents() {
     this.loading.set(true);
     this.httpClient
-      .get<
-        IGeneralResponse<EventReport[]>
-      >('http://localhost:8000/server/api/events/report')
+      .get<IGeneralResponse<EventReport[]>>('http://localhost:8000/server/api/events/report')
       .pipe(
         delay(500),
         map(({ data }) => {
@@ -465,8 +510,11 @@ export class Events implements OnInit {
     this.exportColumns = this.cols.map((col) => ({ title: col.header, dataKey: col.field }));
   }
 
-  onGlobalFilter(table: Table, event: Event) {
-    table.filterGlobal((event.target as HTMLInputElement).value, 'contains');
+  searchValue = new FormControl<string>('', { nonNullable: true });
+
+  onGlobalFilter(event: Event) {
+    const inputEl = event.target as HTMLInputElement;
+    this.searchValue.setValue(inputEl.value);
   }
 
   openNew() {
@@ -574,12 +622,12 @@ export class Events implements OnInit {
 }
 
 export interface EventReport {
-    event_name: string;
-    club_name: string;
-    event_datetime: string; // или Date если будет преобразование
-    max_participants: number;
-    event_status: 'scheduled' | 'ongoing' | 'completed' | 'cancelled';
-    ticket_price: string; // или number если будет преобразование
-    currency: string;
-    registered_count: number;
+  event_name: string;
+  club_name: string;
+  event_datetime: string; // или Date если будет преобразование
+  max_participants: number;
+  event_status: 'scheduled' | 'ongoing' | 'completed' | 'cancelled';
+  ticket_price: string; // или number если будет преобразование
+  currency: string;
+  registered_count: number;
 }
