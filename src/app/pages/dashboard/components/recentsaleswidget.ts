@@ -23,7 +23,7 @@ import { Tag } from 'primeng/tag';
           <p-table
               [value]="clubs"
               [paginator]="true"
-              [rows]="6"
+              [rows]="10"
               responsiveLayout="scroll"
           >
               <ng-template #header>

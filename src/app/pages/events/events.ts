@@ -37,7 +37,7 @@ interface ExportColumn {
 }
 
 @Component({
-  selector: 'app-members',
+  selector: 'app-events',
   standalone: true,
   imports: [
     CommonModule,
@@ -109,7 +109,7 @@ interface ExportColumn {
       >
         <ng-template #caption>
           <div class="flex items-center justify-between">
-            <h5 class="m-0">Members management</h5>
+            <h5 class="m-0">Events management</h5>
             <p-iconfield>
               <p-inputicon styleClass="pi pi-search" />
               <input
@@ -151,12 +151,12 @@ interface ExportColumn {
             </td>
             <td style="min-width: 12rem">{{ member.user_full_name }}</td>
             <td style="min-width: 16rem">
-              <div style="display: flex; flex-direction: column; gap: 2px">
+              <div class="flex flex-column gap-2">
                 <div>{{ member.user_email }}</div>
-                <div style="color: gray">{{ member.user_phone }}</div>
+                <div>{{ member.user_phone }}</div>
               </div>
             </td>
-            <td style="min-width: 15rem">{{ member.club_name }}</td>
+            <td>{{ member.club_name }}</td>
             <td>
               <p-tag
                 [value]="member.user_role"
@@ -355,7 +355,7 @@ interface ExportColumn {
   `,
   providers: [MessageService, ProductService, ConfirmationService],
 })
-export class Members implements OnInit {
+export class Events implements OnInit {
   productDialog: boolean = false;
 
   products = signal<Product[]>([]);
