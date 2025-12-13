@@ -708,7 +708,9 @@ export class Events implements OnInit {
             catchError(() => of(null)),
             finalize(() => this.globalLoading.set(false)),
           )
-          .subscribe();
+          .subscribe(() => {
+              this.getEvents();
+          });
       },
     });
   }
