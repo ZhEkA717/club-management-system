@@ -22,13 +22,16 @@ export class AuthService {
       >('http://localhost:8000/server/api/auth/login', {
         email,
         password,
-      })
+      }, )
       .pipe(
         map(({ data }) => {
-          if (!data) return null;
+            if (!data) return null;
           return data;
         }),
-        catchError(() => of(null)),
+        catchError(() => {
+            console.log(1);
+            return of(null)
+        }),
         tap((data) => {
           if (data?.token) {
             this.setToken(data.token);

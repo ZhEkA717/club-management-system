@@ -84,9 +84,23 @@ import { LayoutService } from '../service/layout.service';
 export class AppTopbar {
     items!: MenuItem[];
 
-    constructor(public layoutService: LayoutService) {}
+    constructor(public layoutService: LayoutService) {
+        const theme = localStorage.getItem('theme');
+        if(theme) {
+            this.layoutService.layoutConfig.update((state) => ({
+                ...state,
+                darkTheme: JSON.parse(theme)
+            }));
+        }
+
+
+    }
 
     toggleDarkMode() {
-        this.layoutService.layoutConfig.update((state) => ({ ...state, darkTheme: !state.darkTheme }));
+        this.layoutService.layoutConfig.update((state) => {
+            const theme = !state.darkTheme;
+            localStorage.setItem('theme', String(theme));
+            return { ...state, darkTheme: theme };
+        });
     }
 }

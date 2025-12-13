@@ -158,7 +158,7 @@ export interface User {
               ></p-password>
 
               <div class="flex items-center justify-between mt-2 mb-8 gap-8">
-                <span class="font-medium no-underline ml-2 text-right cursor-pointer text-primary"
+                <span routerLink="/auth/login" class="font-medium no-underline ml-2 text-right cursor-pointer text-primary"
                   >Sign in?</span
                 >
               </div>

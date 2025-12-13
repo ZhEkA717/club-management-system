@@ -18,7 +18,7 @@ export class TokenInterceptor implements HttpInterceptor {
 
         let cloned = req;
         const skipAuth = req.context.get(SKIP_AUTH);
-        console.log(skipAuth);
+
         if(skipAuth) {
             return next.handle(req);
         }
