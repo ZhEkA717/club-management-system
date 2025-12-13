@@ -44,6 +44,7 @@ import { DatePickerModule } from 'primeng/datepicker';
 import { MultiSelectModule } from 'primeng/multiselect';
 import { ProgressSpinner } from 'primeng/progressspinner';
 import { BlockUI } from 'primeng/blockui';
+import { Message } from 'primeng/message';
 
 interface Column {
   field: string;
@@ -87,6 +88,7 @@ interface ExportColumn {
     BlockUI,
   ],
   template: `
+    <p-toast></p-toast>
     <p-blockUI [blocked]="globalLoading()">
       <div style="display: grid; height: 100%; width: 100%; place-items: center">
         <p-progressSpinner></p-progressSpinner>
@@ -108,7 +110,7 @@ interface ExportColumn {
           icon="pi pi-trash"
           outlined
           (onClick)="deleteSelectedProducts()"
-          [disabled]="!selectedProducts || !selectedProducts.length"
+          [disabled]="!selectedEvents || !selectedEvents.length"
         />
       </ng-template>
 
@@ -136,7 +138,7 @@ interface ExportColumn {
         [columns]="cols"
         [paginator]="true"
         [tableStyle]="{ 'min-width': '75rem' }"
-        [(selection)]="selectedProducts"
+        [(selection)]="selectedEvents"
         [rowHover]="true"
       >
         <ng-template #caption>
@@ -430,7 +432,7 @@ export class Events implements OnInit {
 
   product!: Product;
 
-  selectedProducts!: EventReport[] | null;
+  selectedEvents!: EventReport[] | null;
 
   submitted: boolean = false;
 
@@ -673,18 +675,32 @@ export class Events implements OnInit {
 
   deleteSelectedProducts() {
     this.confirmationService.confirm({
-      message: 'Are you sure you want to delete the selected products?',
+      message: 'Are you sure you want to delete the selected events?',
       header: 'Confirm',
       icon: 'pi pi-exclamation-triangle',
       accept: () => {
-        // this.products.set(this.products().filter((val) => !this.selectedProducts?.includes(val)));
-        this.selectedProducts = null;
-        this.messageService.add({
-          severity: 'success',
-          summary: 'Successful',
-          detail: 'Products Deleted',
-          life: 3000,
-        });
+        this.globalLoading.set(true);
+        this.httpClient
+          .post('http://localhost:8000/server/api/events/delete-multiple', {
+            event_ids: [...(this.selectedEvents?.map((item) => item.event_id) || [])],
+          })
+          .pipe(
+            delay(500),
+            catchError(() => of(null)),
+            finalize(() => {
+              this.globalLoading.set(false);
+            }),
+          )
+          .subscribe(() => {
+            this.getEvents();
+            this.selectedEvents = null;
+            this.messageService.add({
+              severity: 'success',
+              summary: 'Successful',
+              detail: 'Events Deleted',
+              life: 3000,
+            });
+          });
       },
     });
   }
@@ -709,7 +725,13 @@ export class Events implements OnInit {
             finalize(() => this.globalLoading.set(false)),
           )
           .subscribe(() => {
-              this.getEvents();
+            this.getEvents();
+            this.messageService.add({
+              severity: 'success',
+              summary: 'Successful',
+              detail: 'Events Deleted',
+              life: 3000,
+            });
           });
       },
     });
