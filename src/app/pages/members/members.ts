@@ -156,7 +156,7 @@ interface ExportColumn {
                 <div style="color: gray">{{ member.user_phone }}</div>
               </div>
             </td>
-            <td style="min-width: 15rem">{{ member.club_name }}</td>
+            <td>{{ member.club_name }}</td>
             <td>
               <p-tag
                 [value]="member.user_role"
@@ -396,11 +396,11 @@ export class Members implements OnInit {
     },
     {
       field: 'events_registered_count',
-      header: 'Events',
+      header: 'Members',
     },
     {
       field: 'events_registered_count',
-      header: 'Events',
+      header: 'Members',
     },
   ];
 

@@ -34,7 +34,7 @@ export class NodeService {
             {
                 key: '1',
                 label: 'Events',
-                data: 'Events Folder',
+                data: 'Members Folder',
                 icon: 'pi pi-fw pi-calendar',
                 children: [
                     { key: '1-0', label: 'Meeting', icon: 'pi pi-fw pi-calendar-plus', data: 'Meeting' },

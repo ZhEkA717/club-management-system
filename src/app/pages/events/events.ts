@@ -99,7 +99,7 @@ interface ExportColumn {
     } @else {
       <p-table
         #dt
-        [value]="members()"
+        [value]="events()"
         [rows]="10"
         [columns]="cols"
         [paginator]="true"
@@ -126,51 +126,48 @@ interface ExportColumn {
             <th style="width: 3rem">
               <p-tableHeaderCheckbox />
             </th>
-            <th style="min-width: 16rem">Member</th>
-            <th style="min-width:16rem">Contact</th>
-            <th>Club</th>
-            <th style="min-width: 8rem">Role</th>
+            <th style="min-width: 16rem">Event</th>
+            <th style="min-width:16rem">Club</th>
+            <th>Data & Time</th>
+            <th style="min-width: 8rem">Attendees</th>
             <th style="min-width:10rem">Status</th>
-            <th
-              pSortableColumn="events_registered_count"
-              style="min-width: 12rem"
-            >
-              Events
-              <p-sortIcon field="events_registered_count" />
-            </th>
+            <th style="min-width:10rem">Price</th>
             <th style="min-width: 12rem"></th>
           </tr>
         </ng-template>
         <ng-template
           #body
-          let-member
+          let-event
         >
           <tr>
             <td style="width: 3rem">
-              <p-tableCheckbox [value]="member" />
+              <p-tableCheckbox [value]="event" />
             </td>
-            <td style="min-width: 12rem">{{ member.user_full_name }}</td>
-            <td style="min-width: 16rem">
-              <div class="flex flex-column gap-2">
-                <div>{{ member.user_email }}</div>
-                <div>{{ member.user_phone }}</div>
-              </div>
+            <td style="min-width: 12rem">{{ event.event_name }}</td>
+            <td style="min-width: 15rem">{{ event.club_name }}</td>
+              <td style="min-width: 16rem">
+                  <div style="display: flex; flex-direction: column; gap: 2px">
+                      <div style="display: flex; gap: 12px">
+                          <i class="pi pi-calendar"></i>
+                          {{ event.event_datetime | date }}
+                      </div>
+                      <div style="display: flex; gap: 12px; color: gray">
+                          <i class="pi pi-clock"></i>
+                          {{ event.event_datetime | date: 'HH:mm' }}
+                      </div>
+                  </div>
+              </td>
+            <td>
+              {{event.registered_count}} / {{event.max_participants}}
             </td>
-            <td>{{ member.club_name }}</td>
             <td>
               <p-tag
-                [value]="member.user_role"
-                [severity]="userRoleSaverity[member.user_role]"
+                [value]="event.event_status"
+                [severity]="eventStatusSaverity[event.event_status]"
               ></p-tag>
             </td>
             <td>
-              <p-tag
-                [value]="member.user_status"
-                [severity]="member.user_status === 'Active' || member.user_status === 'Активен' ? 'success' : 'danger'"
-              ></p-tag>
-            </td>
-            <td>
-              {{ member.events_registered_count }}
+              {{ event.ticket_price }} {{ event.currency }}
             </td>
             <td>
               <p-button
@@ -362,7 +359,7 @@ export class Events implements OnInit {
 
   product!: Product;
 
-  selectedProducts!: UserReportRecord[] | null;
+  selectedProducts!: EventReport[] | null;
 
   submitted: boolean = false;
 
@@ -406,12 +403,18 @@ export class Events implements OnInit {
 
   loading = signal(true);
 
-  members = signal<UserReportRecord[]>([]);
+  events = signal<EventReport[]>([]);
   userRoleSaverity: any = {
     member: 'info',
     admin: 'danger',
     club_owner: 'warn',
   };
+  eventStatusSaverity: any = {
+      scheduled: 'warn',
+      ongoing: 'info',
+      completed: 'success',
+      cancelled: 'danger'
+  }
 
   private httpClient = inject(HttpClient);
 
@@ -427,27 +430,25 @@ export class Events implements OnInit {
 
   ngOnInit() {
     this.loadDemoData();
-    this.getMembers();
+    this.getEvents();
   }
 
-  getMembers() {
+  getEvents() {
     this.loading.set(true);
     this.httpClient
       .get<
-        IGeneralResponse<{
-          users: UserReportRecord[];
-        }>
-      >('http://localhost:8000/server/api/reports/users-detailed')
+        IGeneralResponse<EventReport[]>
+      >('http://localhost:8000/server/api/events/report')
       .pipe(
         delay(500),
         map(({ data }) => {
-          if (!data) return <UserReportRecord[]>[];
-          return data.users;
+          if (!data) return <EventReport[]>[];
+          return data;
         }),
-        catchError(() => of(<UserReportRecord[]>[])),
+        catchError(() => of(<EventReport[]>[])),
         finalize(() => this.loading.set(false)),
       )
-      .subscribe((resp) => this.members.set(resp));
+      .subscribe((resp) => this.events.set(resp));
   }
 
   loadDemoData() {
@@ -572,14 +573,13 @@ export class Events implements OnInit {
   }
 }
 
-export interface UserReportRecord {
-  user_full_name: string;
-  user_email: string;
-  user_phone: string;
-  club_name: string;
-  events_registered_count: number;
-  user_role: string; // 'member' | 'club_owner' | 'admin'
-  user_status: string; // 'Активен' | 'Неактивен' и т.д.
-  user_balance: number;
-  user_created_at: string; // Дата в формате 'YYYY-MM-DD HH:mm:ss'
+export interface EventReport {
+    event_name: string;
+    club_name: string;
+    event_datetime: string; // или Date если будет преобразование
+    max_participants: number;
+    event_status: 'scheduled' | 'ongoing' | 'completed' | 'cancelled';
+    ticket_price: string; // или number если будет преобразование
+    currency: string;
+    registered_count: number;
 }
