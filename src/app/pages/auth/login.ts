@@ -8,9 +8,10 @@ import { PasswordModule } from 'primeng/password';
 import { RippleModule } from 'primeng/ripple';
 import { AppFloatingConfigurator } from '@/layout/component/app.floatingconfigurator';
 import { AuthService } from '@/pages/auth/auth.service';
-import { MessageService } from 'primeng/api';
+import { ConfirmationService, MessageService } from 'primeng/api';
 import { MessageModule } from 'primeng/message';
 import { Toast } from 'primeng/toast';
+import { ConfirmPopup } from 'primeng/confirmpopup';
 
 export interface IGeneralResponse<T> {
   success: boolean;
@@ -45,8 +46,9 @@ export interface User {
     RippleModule,
     AppFloatingConfigurator,
     Toast,
+    ConfirmPopup,
   ],
-  providers: [MessageService],
+  providers: [MessageService, ConfirmationService],
   template: `
     <p-toast />
     <app-floating-configurator />
