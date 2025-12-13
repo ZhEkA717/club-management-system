@@ -1,8 +1,8 @@
-import { Component, inject, OnInit, signal, ViewChild } from '@angular/core';
+import { Component, DestroyRef, inject, OnInit, signal, ViewChild } from '@angular/core';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { Table, TableModule } from 'primeng/table';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { FormControl, FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { RippleModule } from 'primeng/ripple';
 import { ToastModule } from 'primeng/toast';
@@ -21,9 +21,18 @@ import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { Product, ProductService } from '../service/product.service';
 import { HttpClient } from '@angular/common/http';
 import { IGeneralResponse } from '@/pages/auth/login';
-import { catchError, delay, finalize, map } from 'rxjs/operators';
-import { of } from 'rxjs';
+import {
+    catchError,
+    delay,
+    distinctUntilChanged, filter,
+    finalize,
+    map, skip,
+    switchMap,
+    take
+} from 'rxjs/operators';
+import { debounceTime, of } from 'rxjs';
 import { Skeleton } from 'primeng/skeleton';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 interface Column {
   field: string;
@@ -112,12 +121,15 @@ interface ExportColumn {
             <h5 class="m-0">Members management</h5>
             <p-iconfield>
               <p-inputicon styleClass="pi pi-search" />
-              <input
+              <input style="width: 300px"
                 pInputText
                 type="text"
-                (input)="onGlobalFilter(dt, $event)"
+                (input)="onGlobalFilter($event)"
                 placeholder="Search..."
               />
+                @if (searchLoading()) {
+                    <p-inputicon class="pi pi-spin pi-spinner" />
+                }
             </p-iconfield>
           </div>
         </ng-template>
@@ -166,7 +178,11 @@ interface ExportColumn {
             <td>
               <p-tag
                 [value]="member.user_status"
-                [severity]="member.user_status === 'Active' || member.user_status === 'Активен' ? 'success' : 'danger'"
+                [severity]="
+                  member.user_status === 'Active' || member.user_status === 'Активен'
+                    ? 'success'
+                    : 'danger'
+                "
               ></p-tag>
             </td>
             <td>
@@ -405,6 +421,7 @@ export class Members implements OnInit {
   ];
 
   loading = signal(true);
+  searchLoading = signal(false);
 
   members = signal<UserReportRecord[]>([]);
   userRoleSaverity: any = {
@@ -414,12 +431,37 @@ export class Members implements OnInit {
   };
 
   private httpClient = inject(HttpClient);
+  private destroyRef = inject(DestroyRef);
 
   constructor(
     private productService: ProductService,
     private messageService: MessageService,
     private confirmationService: ConfirmationService,
-  ) {}
+  ) {
+    this.searchValue.valueChanges.pipe(
+      takeUntilDestroyed(this.destroyRef),
+      distinctUntilChanged(),
+      debounceTime(400),
+      switchMap((value) => {
+        this.searchLoading.set(true);
+        return this.httpClient
+          .get<
+            IGeneralResponse<{
+              users: UserReportRecord[];
+            }>
+          >(`http://localhost:8000/server/api/members/search?query=${value}`)
+          .pipe(
+            delay(500),
+            map(({ data }) => {
+              if (!data) return <UserReportRecord[]>[];
+              return data.users;
+            }),
+            catchError(() => of(<UserReportRecord[]>[])),
+            finalize(() => this.searchLoading.set(false)),
+          );
+      }),
+    ).subscribe(resp => this.members.set(resp))
+  }
 
   exportCSV() {
     this.dt.exportCSV();
@@ -464,8 +506,11 @@ export class Members implements OnInit {
     this.exportColumns = this.cols.map((col) => ({ title: col.header, dataKey: col.field }));
   }
 
-  onGlobalFilter(table: Table, event: Event) {
-    table.filterGlobal((event.target as HTMLInputElement).value, 'contains');
+  searchValue = new FormControl<string>('', { nonNullable: true });
+
+  onGlobalFilter(event: Event) {
+    const inputEl = event.target as HTMLInputElement;
+    this.searchValue.setValue(inputEl.value);
   }
 
   openNew() {
