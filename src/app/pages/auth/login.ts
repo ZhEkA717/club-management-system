@@ -11,12 +11,12 @@ import { AuthService } from '@/pages/auth/auth.service';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { MessageModule } from 'primeng/message';
 import { Toast } from 'primeng/toast';
-import { ConfirmPopup } from 'primeng/confirmpopup';
 
 export interface IGeneralResponse<T> {
   success: boolean;
   message: string;
   data: T;
+  errors: any | null;
   timestamp: number;
 }
 

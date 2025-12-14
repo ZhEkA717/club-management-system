@@ -25,12 +25,13 @@ import { InputIconModule } from 'primeng/inputicon';
 import { IconFieldModule } from 'primeng/iconfield';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { Product, ProductService } from '../service/product.service';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { IGeneralResponse } from '@/pages/auth/login';
 import {
   catchError,
   delay,
   distinctUntilChanged,
+  filter,
   finalize,
   map,
   switchMap,
@@ -44,7 +45,6 @@ import { DatePickerModule } from 'primeng/datepicker';
 import { MultiSelectModule } from 'primeng/multiselect';
 import { ProgressSpinner } from 'primeng/progressspinner';
 import { BlockUI } from 'primeng/blockui';
-import { Message } from 'primeng/message';
 
 interface Column {
   field: string;
@@ -103,6 +103,15 @@ interface ExportColumn {
           severity="secondary"
           class="mr-2"
           (onClick)="openNew()"
+        />
+        <p-button
+          class="mr-2"
+          severity="secondary"
+          label="Register for an event"
+          icon="pi pi-user-plus"
+          outlined
+          (onClick)="registerOnEvent()"
+          [disabled]="!selectedEvents || selectedEvents.length !== 1"
         />
         <p-button
           severity="secondary"
@@ -176,7 +185,9 @@ interface ExportColumn {
           #body
           let-event
         >
-          <tr>
+          <tr
+            [ngStyle]="{'background-color': event.participants.includes(authUserId)  ? 'rgba(33, 150, 243, 0.08)': ''}"
+          >
             <td style="width: 3rem">
               <p-tableCheckbox [value]="event" />
             </td>
@@ -511,6 +522,8 @@ export class Events implements OnInit {
     cureency: new FormControl<string | null>(null),
   });
 
+  authUserId: number | null = null;
+
   private httpClient = inject(HttpClient);
 
   constructor(
@@ -518,9 +531,20 @@ export class Events implements OnInit {
     private messageService: MessageService,
     private confirmationService: ConfirmationService,
   ) {
-    this.form.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((res) => {
-      console.log(res);
-    });
+    this.httpClient
+      .get<IGeneralResponse<{ user: IUser }>>('http://localhost:8000/server/api/auth/me')
+      .pipe(
+        map(({ data }) => {
+          if (!data) return null;
+          return data.user;
+        }),
+        catchError(() => of(null)),
+        filter(Boolean),
+        tap(({ id }) => {
+          this.authUserId = id;
+        }),
+      )
+      .subscribe();
     this.searchValue.valueChanges
       .pipe(
         takeUntilDestroyed(this.destroyRef),
@@ -748,6 +772,51 @@ export class Events implements OnInit {
       });
     }
   }
+
+  registerOnEvent() {
+    const event = this.selectedEvents?.[0];
+    if (event) {
+      this.globalLoading.set(true);
+      this.httpClient
+        .post<IGeneralResponse<any>>(
+          `http://localhost:8000/server/api/events/${event.event_id}/register`,
+          null,
+        )
+        .pipe(
+          delay(500),
+          tap(({ success, message }) => {
+            if (success) {
+              this.messageService.add({
+                severity: 'success',
+                summary: 'Successful',
+                detail: message,
+                life: 3000,
+              });
+            }
+          }),
+          catchError((err: HttpErrorResponse) => {
+            this.messageService.add({
+              severity: 'error',
+              summary: 'Error',
+              detail: err.error.message,
+              life: 4000,
+            });
+            return of(null);
+          }),
+          finalize(() => {
+            this.globalLoading.set(false);
+          }),
+        )
+        .subscribe(() => {
+          const updatedEvent = this.events().find((item) => item.event_id === event.event_id);
+
+          if (updatedEvent && this.authUserId) {
+            updatedEvent.registered_count += 1;
+            updatedEvent.participants.push(this.authUserId);
+          }
+        });
+    }
+  }
 }
 
 export interface EventReport {
@@ -761,6 +830,7 @@ export interface EventReport {
   ticket_price: string; // или number если будет преобразование
   currency: string;
   registered_count: number;
+  participants: number[];
 }
 
 export interface Club {
@@ -790,3 +860,16 @@ export type CreateEventFormType = FormGroup<{
   price: FormControl<string | null>;
   cureency: FormControl<string | null>;
 }>;
+
+export interface IUser {
+  id: number;
+  email: string;
+  first_name: string;
+  last_name: string;
+  phone: string;
+  role: string;
+  balance: string;
+  currency: string;
+  club_id: number | null;
+  created_at: string;
+}
