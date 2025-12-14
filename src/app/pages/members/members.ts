@@ -22,17 +22,24 @@ import { Product, ProductService } from '../service/product.service';
 import { HttpClient } from '@angular/common/http';
 import { IGeneralResponse } from '@/pages/auth/login';
 import {
-    catchError,
-    delay,
-    distinctUntilChanged, filter,
-    finalize,
-    map, skip,
-    switchMap,
-    take
+  catchError,
+  delay,
+  distinctUntilChanged,
+  filter,
+  finalize,
+  map,
+  skip,
+  switchMap,
+  take,
+  tap,
 } from 'rxjs/operators';
 import { debounceTime, of } from 'rxjs';
 import { Skeleton } from 'primeng/skeleton';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { HasPermissionDirective } from '@/pages/events/has-permission.directive';
+import { IUser } from '@/pages/events/events';
+import { BlockUI } from 'primeng/blockui';
+import { ProgressSpinner } from 'primeng/progressspinner';
 
 interface Column {
   field: string;
@@ -68,11 +75,23 @@ interface ExportColumn {
     IconFieldModule,
     ConfirmDialogModule,
     Skeleton,
+    HasPermissionDirective,
+    BlockUI,
+    ProgressSpinner,
   ],
   template: `
+    <p-toast></p-toast>
+    <p-blockUI [blocked]="globalLoading()">
+      <div style="display: grid; height: 100%; width: 100%; place-items: center">
+        <p-progressSpinner></p-progressSpinner>
+      </div>
+    </p-blockUI>
     <p-toolbar styleClass="mb-6">
       <ng-template #start>
         <p-button
+          *appHasPermission="{
+            role: authUser!.role,
+          }"
           label="New"
           icon="pi pi-plus"
           severity="secondary"
@@ -80,12 +99,15 @@ interface ExportColumn {
           (onClick)="openNew()"
         />
         <p-button
+          *appHasPermission="{
+            role: authUser!.role,
+          }"
           severity="secondary"
           label="Delete"
           icon="pi pi-trash"
           outlined
           (onClick)="deleteSelectedProducts()"
-          [disabled]="!selectedProducts || !selectedProducts.length"
+          [disabled]="!selectedMembers || !selectedMembers.length"
         />
       </ng-template>
 
@@ -113,7 +135,7 @@ interface ExportColumn {
         [columns]="cols"
         [paginator]="true"
         [tableStyle]="{ 'min-width': '75rem' }"
-        [(selection)]="selectedProducts"
+        [(selection)]="selectedMembers"
         [rowHover]="true"
       >
         <ng-template #caption>
@@ -121,21 +143,27 @@ interface ExportColumn {
             <h5 class="m-0">Members management</h5>
             <p-iconfield>
               <p-inputicon styleClass="pi pi-search" />
-              <input style="width: 300px"
+              <input
+                style="width: 300px"
                 pInputText
                 type="text"
                 (input)="onGlobalFilter($event)"
                 placeholder="Search..."
               />
-                @if (searchLoading()) {
-                    <p-inputicon class="pi pi-spin pi-spinner" />
-                }
+              @if (searchLoading()) {
+                <p-inputicon class="pi pi-spin pi-spinner" />
+              }
             </p-iconfield>
           </div>
         </ng-template>
         <ng-template #header>
           <tr>
-            <th style="width: 3rem">
+            <th
+              *appHasPermission="{
+                role: authUser!.role,
+              }"
+              style="width: 3rem"
+            >
               <p-tableHeaderCheckbox />
             </th>
             <th style="min-width: 16rem">Member</th>
@@ -158,7 +186,12 @@ interface ExportColumn {
           let-member
         >
           <tr>
-            <td style="width: 3rem">
+            <td
+              *appHasPermission="{
+                role: authUser!.role,
+              }"
+              style="width: 3rem"
+            >
               <p-tableCheckbox [value]="member" />
             </td>
             <td style="min-width: 12rem">{{ member.user_full_name }}</td>
@@ -190,6 +223,9 @@ interface ExportColumn {
             </td>
             <td>
               <p-button
+                *appHasPermission="{
+                  role: authUser!.role,
+                }"
                 icon="pi pi-pencil"
                 class="mr-2"
                 [rounded]="true"
@@ -197,11 +233,14 @@ interface ExportColumn {
                 (click)="editProduct(product)"
               />
               <p-button
+                *appHasPermission="{
+                  role: authUser!.role,
+                }"
                 icon="pi pi-trash"
                 severity="danger"
                 [rounded]="true"
                 [outlined]="true"
-                (click)="deleteProduct(product)"
+                (click)="deleteProduct(member)"
               />
             </td>
           </tr>
@@ -378,7 +417,7 @@ export class Members implements OnInit {
 
   product!: Product;
 
-  selectedProducts!: UserReportRecord[] | null;
+  selectedMembers!: UserReportRecord[] | null;
 
   submitted: boolean = false;
 
@@ -422,6 +461,7 @@ export class Members implements OnInit {
 
   loading = signal(true);
   searchLoading = signal(false);
+  globalLoading = signal<boolean>(false);
 
   members = signal<UserReportRecord[]>([]);
   userRoleSaverity: any = {
@@ -432,35 +472,52 @@ export class Members implements OnInit {
 
   private httpClient = inject(HttpClient);
   private destroyRef = inject(DestroyRef);
+  authUser: IUser | null = null;
 
   constructor(
     private productService: ProductService,
     private messageService: MessageService,
     private confirmationService: ConfirmationService,
   ) {
-    this.searchValue.valueChanges.pipe(
-      takeUntilDestroyed(this.destroyRef),
-      distinctUntilChanged(),
-      debounceTime(400),
-      switchMap((value) => {
-        this.searchLoading.set(true);
-        return this.httpClient
-          .get<
-            IGeneralResponse<{
-              users: UserReportRecord[];
-            }>
-          >(`http://localhost:8000/server/api/members/search?query=${value}`)
-          .pipe(
-            delay(500),
-            map(({ data }) => {
-              if (!data) return <UserReportRecord[]>[];
-              return data.users;
-            }),
-            catchError(() => of(<UserReportRecord[]>[])),
-            finalize(() => this.searchLoading.set(false)),
-          );
-      }),
-    ).subscribe(resp => this.members.set(resp))
+    this.httpClient
+      .get<IGeneralResponse<{ user: IUser }>>('http://localhost:8000/server/api/auth/me')
+      .pipe(
+        map(({ data }) => {
+          if (!data) return null;
+          return data.user;
+        }),
+        catchError(() => of(null)),
+        filter(Boolean),
+        tap((user) => {
+          this.authUser = user;
+        }),
+      )
+      .subscribe();
+    this.searchValue.valueChanges
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        distinctUntilChanged(),
+        debounceTime(400),
+        switchMap((value) => {
+          this.searchLoading.set(true);
+          return this.httpClient
+            .get<
+              IGeneralResponse<{
+                users: UserReportRecord[];
+              }>
+            >(`http://localhost:8000/server/api/members/search?query=${value}`)
+            .pipe(
+              delay(500),
+              map(({ data }) => {
+                if (!data) return <UserReportRecord[]>[];
+                return data.users;
+              }),
+              catchError(() => of(<UserReportRecord[]>[])),
+              finalize(() => this.searchLoading.set(false)),
+            );
+        }),
+      )
+      .subscribe((resp) => this.members.set(resp));
   }
 
   exportCSV() {
@@ -530,14 +587,28 @@ export class Members implements OnInit {
       header: 'Confirm',
       icon: 'pi pi-exclamation-triangle',
       accept: () => {
-        // this.products.set(this.products().filter((val) => !this.selectedProducts?.includes(val)));
-        this.selectedProducts = null;
-        this.messageService.add({
-          severity: 'success',
-          summary: 'Successful',
-          detail: 'Products Deleted',
-          life: 3000,
-        });
+        this.globalLoading.set(true);
+        this.httpClient
+          .post('http://localhost:8000/server/api/members/multiple-delete', {
+            user_ids: this.selectedMembers?.map((item) => item.user_id) || [],
+          })
+          .pipe(
+            delay(500),
+            catchError(() => of(null)),
+            finalize(() => this.globalLoading.set(false)),
+          )
+          .subscribe((resp) => {
+            if (resp) {
+              this.messageService.add({
+                severity: 'success',
+                summary: 'Successful',
+                detail: 'Selected members deleted',
+                life: 3000,
+              });
+              this.getMembers();
+              this.selectedMembers = null;
+            }
+          });
       },
     });
   }
@@ -547,20 +618,40 @@ export class Members implements OnInit {
     this.submitted = false;
   }
 
-  deleteProduct(product: Product) {
+  deleteProduct(member: UserReportRecord) {
     this.confirmationService.confirm({
-      message: 'Are you sure you want to delete ' + product.name + '?',
+      message: 'Are you sure you want to delete ' + member.user_full_name + '?',
       header: 'Confirm',
       icon: 'pi pi-exclamation-triangle',
       accept: () => {
-        this.products.set(this.products().filter((val) => val.id !== product.id));
-        this.product = {};
-        this.messageService.add({
-          severity: 'success',
-          summary: 'Successful',
-          detail: 'Product Deleted',
-          life: 3000,
-        });
+        this.globalLoading.set(true);
+        this.httpClient
+          .delete(`http://localhost:8000/server/api/members/${member.user_id}`)
+          .pipe(
+            delay(500),
+            catchError(() => of(null)),
+            finalize(() => {
+              this.globalLoading.set(false);
+            }),
+          )
+          .subscribe((resp) => {
+            if (resp) {
+              member.user_status = 'Inactive';
+              this.messageService.add({
+                severity: 'success',
+                summary: 'Successful',
+                detail: `${member.user_full_name} deleted`,
+                life: 3000,
+              });
+            } else {
+              this.messageService.add({
+                severity: 'error',
+                summary: 'Error',
+                detail: `${member.user_full_name} already deleted`,
+                life: 3000,
+              });
+            }
+          });
       },
     });
   }
@@ -618,6 +709,7 @@ export class Members implements OnInit {
 }
 
 export interface UserReportRecord {
+  user_id: string;
   user_full_name: string;
   user_email: string;
   user_phone: string;

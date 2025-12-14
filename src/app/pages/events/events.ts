@@ -518,11 +518,7 @@ export class Events implements OnInit {
   events = signal<EventReport[]>([]);
   searchValue = new FormControl<string>('', { nonNullable: true });
   globalLoading = signal<boolean>(false);
-  userRoleSaverity: any = {
-    member: 'info',
-    admin: 'danger',
-    club_owner: 'warn',
-  };
+
   eventStatusSaverity: any = {
     scheduled: 'warn',
     ongoing: 'info',
