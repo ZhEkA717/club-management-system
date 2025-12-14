@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
@@ -10,6 +10,9 @@ import { AppFloatingConfigurator } from '@/layout/component/app.floatingconfigur
 import { AuthService } from '@/pages/auth/auth.service';
 import { MessageService } from 'primeng/api';
 import { Toast } from 'primeng/toast';
+import { BlockUI } from 'primeng/blockui';
+import { ProgressSpinner } from 'primeng/progressspinner';
+import { delay, finalize } from 'rxjs/operators';
 
 export interface IGeneralResponse<T> {
   success: boolean;
@@ -44,8 +47,15 @@ export interface User {
     RippleModule,
     AppFloatingConfigurator,
     Toast,
+    BlockUI,
+    ProgressSpinner,
   ],
   template: `
+    <p-blockUI [blocked]="globalLoading()">
+      <div style="display: grid; height: 100%; width: 100%; place-items: center">
+        <p-progressSpinner></p-progressSpinner>
+      </div>
+    </p-blockUI>
     <p-toast />
     <app-floating-configurator />
     <div
@@ -158,7 +168,9 @@ export interface User {
               ></p-password>
 
               <div class="flex items-center justify-between mt-2 mb-8 gap-8">
-                <span routerLink="/auth/login" class="font-medium no-underline ml-2 text-right cursor-pointer text-primary"
+                <span
+                  routerLink="/auth/login"
+                  class="font-medium no-underline ml-2 text-right cursor-pointer text-primary"
                   >Sign in?</span
                 >
               </div>
@@ -183,10 +195,16 @@ export class Registration {
   private authService = inject(AuthService);
   private router = inject(Router);
   private messageService = inject(MessageService);
+  globalLoading = signal<boolean>(false);
 
   registration() {
+    this.globalLoading.set(true);
     this.authService
       .registration(this.email, this.firstName, this.lastName, this.password)
+      .pipe(
+        delay(500),
+        finalize(() => this.globalLoading.set(false)),
+      )
       .subscribe((res) => {
         if (res?.token) {
           this.router.navigate(['/']).then();

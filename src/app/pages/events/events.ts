@@ -792,48 +792,57 @@ export class Events implements OnInit {
   }
 
   registerOnEvent() {
-    const event = this.selectedEvents?.[0];
-    if (event) {
-      this.globalLoading.set(true);
-      this.httpClient
-        .post<IGeneralResponse<any>>(
-          `http://localhost:8000/server/api/events/${event.event_id}/register`,
-          null,
-        )
-        .pipe(
-          delay(500),
-          tap(({ success, message }) => {
-            if (success) {
-              this.messageService.add({
-                severity: 'success',
-                summary: 'Successful',
-                detail: message,
-                life: 3000,
-              });
-            }
-          }),
-          catchError((err: HttpErrorResponse) => {
-            this.messageService.add({
-              severity: 'error',
-              summary: 'Error',
-              detail: err.error.message,
-              life: 4000,
-            });
-            return of(null);
-          }),
-          finalize(() => {
-            this.globalLoading.set(false);
-          }),
-        )
-        .subscribe(() => {
-          const updatedEvent = this.events().find((item) => item.event_id === event.event_id);
+      const event = this.selectedEvents?.[0];
+      this.confirmationService.confirm({
+          message: `Do you really want to register for the ${event?.event_name}?
+                    The registration fee is ${event?.ticket_price} ${event?.currency}`,
+          header: 'Confirm',
+          icon: 'pi pi-exclamation-triangle',
+          accept: () => {
+              if (event) {
+                  this.globalLoading.set(true);
+                  this.httpClient
+                      .post<IGeneralResponse<any>>(
+                          `http://localhost:8000/server/api/events/${event.event_id}/register`,
+                          null,
+                      )
+                      .pipe(
+                          delay(500),
+                          tap(({ success, message }) => {
+                              if (success) {
+                                  this.messageService.add({
+                                      severity: 'success',
+                                      summary: 'Successful',
+                                      detail: message,
+                                      life: 3000,
+                                  });
+                              }
+                          }),
+                          catchError((err: HttpErrorResponse) => {
+                              this.messageService.add({
+                                  severity: 'error',
+                                  summary: 'Error',
+                                  detail: err.error.message,
+                                  life: 4000,
+                              });
+                              return of(null);
+                          }),
+                          finalize(() => {
+                              this.globalLoading.set(false);
+                          }),
+                      )
+                      .subscribe(() => {
+                          const updatedEvent = this.events().find((item) => item.event_id === event.event_id);
 
-          if (updatedEvent && this.authUserId) {
-            updatedEvent.registered_count += 1;
-            updatedEvent.participants.push(this.authUserId);
-          }
-        });
-    }
+                          if (updatedEvent && this.authUserId) {
+                              updatedEvent.registered_count += 1;
+                              updatedEvent.participants.push(this.authUserId);
+                          }
+                      });
+              }
+          },
+      });
+
   }
 }
 

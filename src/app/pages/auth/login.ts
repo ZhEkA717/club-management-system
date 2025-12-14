@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
@@ -11,6 +11,9 @@ import { AuthService } from '@/pages/auth/auth.service';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { MessageModule } from 'primeng/message';
 import { Toast } from 'primeng/toast';
+import { BlockUI } from 'primeng/blockui';
+import { ProgressSpinner } from 'primeng/progressspinner';
+import { delay, finalize } from 'rxjs/operators';
 
 export interface IGeneralResponse<T> {
   success: boolean;
@@ -46,10 +49,17 @@ export interface User {
     RippleModule,
     AppFloatingConfigurator,
     Toast,
+    BlockUI,
+    ProgressSpinner,
   ],
   providers: [MessageService, ConfirmationService],
   template: `
     <p-toast />
+    <p-blockUI [blocked]="globalLoading()">
+      <div style="display: grid; height: 100%; width: 100%; place-items: center">
+        <p-progressSpinner></p-progressSpinner>
+      </div>
+    </p-blockUI>
     <app-floating-configurator />
     <div
       class="bg-surface-50 dark:bg-surface-950 flex items-center justify-center min-h-screen min-w-screen overflow-hidden"
@@ -159,18 +169,26 @@ export class Login {
   private router = inject(Router);
   private authService = inject(AuthService);
   private messageService = inject(MessageService);
+  globalLoading = signal<boolean>(false);
 
   login() {
-    this.authService.login(this.email, this.password).subscribe((res) => {
-      if (this.authService.isAuthenticated()) {
-        this.router.navigate(['/']).then();
-      } else {
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Error Message',
-          detail: 'Validation failed',
-        });
-      }
-    });
+    this.globalLoading.set(true);
+    this.authService
+      .login(this.email, this.password)
+      .pipe(
+          delay(500),
+          finalize(() => this.globalLoading.set(false))
+      )
+      .subscribe((res) => {
+        if (this.authService.isAuthenticated()) {
+          this.router.navigate(['/']).then();
+        } else {
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Error Message',
+            detail: 'Validation failed',
+          });
+        }
+      });
   }
 }

@@ -17,51 +17,57 @@ import { Tag } from 'primeng/tag';
   imports: [CommonModule, TableModule, ButtonModule, RippleModule, Skeleton, Tag],
   template: ` <div class="card mb-8!">
     <div class="font-semibold text-xl mb-4">Clubs management</div>
-      @if (loading()) {
-          <p-skeleton width="100%" height="calc(100vh - 400px)" borderRadius="8px"></p-skeleton>
-      }@else {
-          <p-table
-              [value]="clubs"
-              [paginator]="true"
-              [rows]="10"
-              responsiveLayout="scroll"
-          >
-              <ng-template #header>
-                  <tr>
-                      <th>Club name</th>
-                      <th pSortableColumn="members">
-                          Members
-                          <p-sortIcon field="members"></p-sortIcon>
-                      </th>
-                      <th pSortableColumn="events">
-                          Events
-                          <p-sortIcon field="events"></p-sortIcon>
-                      </th>
-                      <th >
-                          Captain
-                      </th>
-                      <th>Vice Captain</th>
-                      <th>Status</th>
-                  </tr>
-              </ng-template>
-              <ng-template
-                  #body
-                  let-club
-              >
-                  <tr>
-                      <td style="width: 25%; min-width: 6rem;">{{ club.club_name }}</td>
-                      <td style="width: 15%;">{{ club.members }}</td>
-                      <td style="width: 15%;">{{ club.events }}</td>
-                      <td style="width: 25%;">{{ club.captain }}</td>
-                      <td style="width: 25%;">{{ club.vice_captain }}</td>
-                      <td style="width: 25%;">
-                          <p-tag [value]="club.status" [severity]="club.status === 'Active' ? 'success' : 'danger'"></p-tag>
-                      </td>
-                  </tr>
-              </ng-template>
-          </p-table>
-      }
-
+    @if (loading()) {
+      <p-skeleton
+        width="100%"
+        height="calc(100vh - 400px)"
+        borderRadius="8px"
+      ></p-skeleton>
+    } @else {
+      <p-table
+        [value]="clubs"
+        [paginator]="true"
+        [rows]="10"
+        responsiveLayout="scroll"
+      >
+        <ng-template #header>
+          <tr>
+            <th>Club name</th>
+            <th pSortableColumn="members">
+              Members
+              <p-sortIcon field="members"></p-sortIcon>
+            </th>
+            <th pSortableColumn="events">
+              Events
+              <p-sortIcon field="events"></p-sortIcon>
+            </th>
+            <th>Captain</th>
+            <th>Vice Captain</th>
+            <th>Category</th>
+            <th>Status</th>
+          </tr>
+        </ng-template>
+        <ng-template
+          #body
+          let-club
+        >
+          <tr>
+            <td style="width: 25%; min-width: 6rem;">{{ club.club_name }}</td>
+            <td style="width: 15%;">{{ club.members }}</td>
+            <td style="width: 15%;">{{ club.events }}</td>
+            <td style="width: 25%;">{{ club.captain }}</td>
+            <td style="width: 25%;">{{ club.vice_captain }}</td>
+            <td style="width: 25%;">{{ club.category }}</td>
+            <td style="width: 25%;">
+              <p-tag
+                [value]="club.status"
+                [severity]="club.status === 'Active' ? 'success' : 'danger'"
+              ></p-tag>
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    }
   </div>`,
   providers: [ProductService],
 })

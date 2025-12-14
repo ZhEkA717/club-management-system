@@ -19,12 +19,13 @@ import { TagModule } from 'primeng/tag';
 import { CustomerService } from '../service/customer.service';
 import { Product, ProductService } from '../service/product.service';
 import { HttpClient } from '@angular/common/http';
-import { catchError, delay, finalize, map } from 'rxjs/operators';
+import { catchError, delay, filter, finalize, map, switchMap, tap } from 'rxjs/operators';
 import { IGeneralResponse } from '@/pages/auth/login';
 import { BlockUI } from 'primeng/blockui';
 import { ProgressSpinner } from 'primeng/progressspinner';
 import { of } from 'rxjs';
 import { Skeleton } from 'primeng/skeleton';
+import { IUser } from '@/pages/events/events';
 
 @Component({
   selector: 'app-payments',
@@ -376,14 +377,27 @@ export class Payments implements OnInit {
   getPayments() {
     this.loading.set(true);
     this.httpClient
-      .get<IGeneralResponse<IPayment[]>>('http://localhost:8000/server/api/payments')
+      .get<IGeneralResponse<{ user: IUser }>>('http://localhost:8000/server/api/auth/me')
       .pipe(
-        delay(500),
         map(({ data }) => {
-          if (!data) return <IPayment[]>[];
-          return data;
+          if (!data) return null;
+          return data.user;
         }),
-        catchError(() => of(<IPayment[]>[])),
+        catchError(() => of(null)),
+        filter(Boolean),
+        switchMap(({ role }) => {
+            const url = role === 'admin' ? 'http://localhost:8000/server/api/payments' : 'http://localhost:8000/server/api/payments/me';
+            return this.httpClient
+                .get<IGeneralResponse<IPayment[]>>(url)
+                .pipe(
+                    delay(500),
+                    map(({ data }) => {
+                        if (!data) return <IPayment[]>[];
+                        return data;
+                    }),
+                    catchError(() => of(<IPayment[]>[])),
+                );
+        }),
         finalize(() => this.loading.set(false)),
       )
       .subscribe((resp) => {
