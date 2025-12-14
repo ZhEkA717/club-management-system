@@ -137,6 +137,7 @@ import { IUser } from '@/pages/events/events';
                         placeholder="Any"
                         (onChange)="filter($event.value)"
                         optionValue="user_id"
+                        optionLabel="user_first_name"
                         styleClass="w-full"
                       >
                         <ng-template
