@@ -90,7 +90,7 @@ interface ExportColumn {
       <ng-template #start>
         <p-button
           *appHasPermission="{
-            role: authUser!.role,
+             role: authUser?.role,
           }"
           label="New"
           icon="pi pi-plus"
@@ -100,7 +100,7 @@ interface ExportColumn {
         />
         <p-button
           *appHasPermission="{
-            role: authUser!.role,
+             role: authUser?.role,
           }"
           severity="secondary"
           label="Delete"
@@ -160,7 +160,7 @@ interface ExportColumn {
           <tr>
             <th
               *appHasPermission="{
-                role: authUser!.role,
+                 role: authUser?.role,
               }"
               style="width: 3rem"
             >
@@ -182,7 +182,7 @@ interface ExportColumn {
                 pSortableColumn="user_balance"
               style="min-width:10rem"
               *appHasPermission="{
-                role: authUser!.role,
+                 role: authUser?.role,
               }"
             >
               Balance
@@ -198,7 +198,7 @@ interface ExportColumn {
           <tr>
             <td
               *appHasPermission="{
-                role: authUser!.role,
+                role: authUser?.role,
               }"
               style="width: 3rem"
             >
@@ -233,7 +233,7 @@ interface ExportColumn {
             </td>
             <td
               *appHasPermission="{
-                role: authUser!.role,
+                 role: authUser?.role,
               }"
             >
               {{ member.user_balance }} USD
@@ -241,7 +241,7 @@ interface ExportColumn {
             <td>
               <p-button
                 *appHasPermission="{
-                  role: authUser!.role,
+                   role: authUser?.role,
                 }"
                 icon="pi pi-pencil"
                 class="mr-2"
@@ -251,7 +251,7 @@ interface ExportColumn {
               />
               <p-button
                 *appHasPermission="{
-                  role: authUser!.role,
+                   role: authUser?.role,
                 }"
                 icon="pi pi-trash"
                 severity="danger"

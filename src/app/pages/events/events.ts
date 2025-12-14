@@ -46,6 +46,7 @@ import { MultiSelectModule } from 'primeng/multiselect';
 import { ProgressSpinner } from 'primeng/progressspinner';
 import { BlockUI } from 'primeng/blockui';
 import { HasPermissionDirective } from '@/pages/events/has-permission.directive';
+import { BalanceService } from '@/pages/service/balance-service';
 
 interface Column {
   field: string;
@@ -101,7 +102,7 @@ interface ExportColumn {
       <ng-template #start>
         <p-button
           *appHasPermission="{
-            role: authUser!.role,
+            role: authUser?.role,
           }"
           label="New"
           icon="pi pi-plus"
@@ -120,8 +121,7 @@ interface ExportColumn {
         />
         <p-button
           *appHasPermission="{
-            role: authUser?.role,
-
+             role: authUser?.role,
           }"
           severity="secondary"
           label="Delete"
@@ -547,22 +547,9 @@ export class Events implements OnInit {
     private productService: ProductService,
     private messageService: MessageService,
     private confirmationService: ConfirmationService,
+    private balanceService: BalanceService,
   ) {
-    this.httpClient
-      .get<IGeneralResponse<{ user: IUser }>>('http://localhost:8000/server/api/auth/me')
-      .pipe(
-        map(({ data }) => {
-          if (!data) return null;
-          return data.user;
-        }),
-        catchError(() => of(null)),
-        filter(Boolean),
-        tap((user) => {
-          this.authUserId = user.id;
-          this.authUser = user;
-        }),
-      )
-      .subscribe();
+   this.authMe();
     this.searchValue.valueChanges
       .pipe(
         takeUntilDestroyed(this.destroyRef),
@@ -588,6 +575,25 @@ export class Events implements OnInit {
         }),
       )
       .subscribe((resp) => this.events.set(resp));
+  }
+
+  authMe() {
+      this.httpClient
+          .get<IGeneralResponse<{ user: IUser }>>('http://localhost:8000/server/api/auth/me')
+          .pipe(
+              map(({ data }) => {
+                  if (!data) return null;
+                  return data.user;
+              }),
+              catchError(() => of(null)),
+              filter(Boolean),
+              tap((user) => {
+                  this.authUserId = user.id;
+                  this.authUser = user;
+                  this.balanceService.balance.set(user.balance);
+              }),
+          )
+          .subscribe();
   }
 
   exportCSV() {
@@ -838,6 +844,7 @@ export class Events implements OnInit {
                               updatedEvent.registered_count += 1;
                               updatedEvent.participants.push(this.authUserId);
                           }
+                          this.authMe();
                       });
               }
           },

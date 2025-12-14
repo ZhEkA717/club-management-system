@@ -5,6 +5,7 @@ import { Empty } from './empty/empty';
 import { Events } from '@/pages/events/events';
 import { Members } from '@/pages/members/members';
 import { Payments } from '@/pages/payments/payments';
+import { Profile } from '@/pages/profile/profile';
 
 export default [
     { path: 'documentation', component: Documentation },
@@ -12,6 +13,7 @@ export default [
     { path: 'members', component: Members },
     { path: 'events', component: Events },
     { path: 'payments', component: Payments },
+    { path: 'profile', component: Profile },
     { path: 'empty', component: Empty },
     { path: '**', redirectTo: '/notfound' }
 ] as Routes;
