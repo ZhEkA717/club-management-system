@@ -11,11 +11,12 @@ import { of } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
 import { BalanceService } from '@/pages/service/balance-service';
 import { BASE_URL } from '../../../constants';
+import { AppConfigurator } from '@/layout/component/app.configurator';
 
 @Component({
   selector: 'app-topbar',
   standalone: true,
-  imports: [RouterModule, CommonModule, StyleClassModule],
+  imports: [RouterModule, CommonModule, StyleClassModule, AppConfigurator],
   template: ` <div class="layout-topbar">
     <div class="layout-topbar-logo-container">
       <button
@@ -81,6 +82,9 @@ import { BASE_URL } from '../../../constants';
             }"
           ></i>
         </button>
+        <div class="relative">
+          <app-configurator />
+        </div>
       </div>
 
       <button
