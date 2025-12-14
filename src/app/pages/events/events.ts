@@ -332,7 +332,6 @@ interface ExportColumn {
                 Date
               </label>
               <p-datepicker
-                dateFormat="dd.mm.yy"
                 [formControl]="form.controls.date"
                 [showIcon]="true"
                 inputId="buttondisplay"
@@ -620,7 +619,7 @@ export class Events implements OnInit {
       .patch(`http://${BASE_URL}/server/api/events/${form.id}`, {
         title: form.eventName,
         club_id: form.clubName,
-        event_date: `${this.datePipe.transform(form.date, 'yyyy-MM-dd')} ${this.datePipe.transform(form.date, 'hh:mm:ss')}`,
+        event_date: `${this.datePipe.transform(form.date, 'yyyy-MM-dd')} ${this.datePipe.transform(form.time, 'hh:mm:ss')}`,
         max_participants: form.quantity,
         event_status: form.status,
         ticket_price: form.price,
@@ -692,8 +691,6 @@ export class Events implements OnInit {
         status: event.event_status,
         quantity: event.max_participants?.toString(),
         cureency: event.currency,
-        date: this.datePipe.transform(event.event_datetime, 'dd.MM.yyyy'),
-        time: this.datePipe.transform(event.event_datetime, 'shortTime'),
       });
       this.productDialog = true;
     });
@@ -771,6 +768,7 @@ export class Events implements OnInit {
     } else {
       this.editEvent().subscribe(() => {
         this.productDialog = false;
+        this.form.reset();
       });
     }
   }
