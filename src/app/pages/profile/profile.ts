@@ -199,17 +199,26 @@ export class Profile {
       .patch(`http://${BASE_URL}/server/api/members/` + this.authUser()?.id, {
         first_name: this.form.value.firstName,
         last_name: this.form.value.lastName,
+        email: this.form.value.email,
         password: this.form.value.password,
       })
       .pipe(
         delay(500),
-        catchError(() => of(null)),
+        catchError((err) => {
+            this.messageService.add({
+                severity: 'error',
+                summary: 'Error',
+                detail: err.error.message,
+                life: 3000,
+            });
+            return of(null)
+        }),
         finalize(() => {
           this.globalLoading.set(false);
         }),
       )
       .subscribe((resp: any) => {
-        if (resp) {
+          if (resp) {
           this.messageService.add({
             severity: 'success',
             summary: 'Successful',
