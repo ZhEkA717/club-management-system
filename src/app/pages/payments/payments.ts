@@ -16,10 +16,8 @@ import { RippleModule } from 'primeng/ripple';
 import { InputIconModule } from 'primeng/inputicon';
 import { IconFieldModule } from 'primeng/iconfield';
 import { TagModule } from 'primeng/tag';
-import { CustomerService } from '../service/customer.service';
-import { Product, ProductService } from '../service/product.service';
 import { HttpClient } from '@angular/common/http';
-import { catchError, delay, filter, finalize, map, switchMap, tap } from 'rxjs/operators';
+import { catchError, delay, filter, finalize, map, switchMap } from 'rxjs/operators';
 import { IGeneralResponse } from '@/pages/auth/login';
 import { BlockUI } from 'primeng/blockui';
 import { ProgressSpinner } from 'primeng/progressspinner';
@@ -332,7 +330,7 @@ import { IUser } from '@/pages/events/events';
       font-weight: bold;
     }
   `,
-  providers: [ConfirmationService, MessageService, CustomerService, ProductService],
+  providers: [ConfirmationService, MessageService],
 })
 export class Payments implements OnInit {
   representatives: Pick<IPayment, 'user_first_name' | 'user_last_name' | 'user_id'>[] = [];
@@ -348,8 +346,6 @@ export class Payments implements OnInit {
     { label: 'club_fee', value: 'club_fee' },
     { label: 'donation', value: 'donation' },
   ];
-
-  products: Product[] = [];
 
   loading = signal(false);
 

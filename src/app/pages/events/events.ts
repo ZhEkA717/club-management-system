@@ -24,7 +24,6 @@ import { TagModule } from 'primeng/tag';
 import { InputIconModule } from 'primeng/inputicon';
 import { IconFieldModule } from 'primeng/iconfield';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
-import { Product, ProductService } from '../service/product.service';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { IGeneralResponse } from '@/pages/auth/login';
 import {
@@ -47,12 +46,6 @@ import { ProgressSpinner } from 'primeng/progressspinner';
 import { BlockUI } from 'primeng/blockui';
 import { HasPermissionDirective } from '@/pages/events/has-permission.directive';
 import { BalanceService } from '@/pages/service/balance-service';
-
-interface Column {
-  field: string;
-  header: string;
-  customExportHeader?: string;
-}
 
 interface ExportColumn {
   title: string;
@@ -121,7 +114,7 @@ interface ExportColumn {
         />
         <p-button
           *appHasPermission="{
-             role: authUser?.role,
+            role: authUser?.role,
           }"
           severity="secondary"
           label="Delete"
@@ -165,6 +158,7 @@ interface ExportColumn {
             <p-iconfield>
               <p-inputicon styleClass="pi pi-search" />
               <input
+                style="width: 300px"
                 pInputText
                 type="text"
                 (input)="onGlobalFilter($event)"
@@ -249,7 +243,6 @@ interface ExportColumn {
               <p-button
                 *appHasPermission="{
                   role: authUser?.role,
-
                 }"
                 [disabled]="event.event_status !== 'scheduled'"
                 icon="pi pi-pencil"
@@ -453,15 +446,11 @@ interface ExportColumn {
 
     <p-confirmdialog [style]="{ width: '450px' }"></p-confirmdialog>
   `,
-  providers: [MessageService, ProductService, ConfirmationService, DatePipe],
+  providers: [MessageService, ConfirmationService, DatePipe],
 })
 export class Events implements OnInit {
   productDialog: boolean = false;
-
-  products = signal<Product[]>([]);
   headerDialog = signal('');
-
-  product!: Product;
 
   selectedEvents!: EventReport[] | null;
 
@@ -544,12 +533,11 @@ export class Events implements OnInit {
   private httpClient = inject(HttpClient);
 
   constructor(
-    private productService: ProductService,
     private messageService: MessageService,
     private confirmationService: ConfirmationService,
     private balanceService: BalanceService,
   ) {
-   this.authMe();
+    this.authMe();
     this.searchValue.valueChanges
       .pipe(
         takeUntilDestroyed(this.destroyRef),
@@ -578,22 +566,22 @@ export class Events implements OnInit {
   }
 
   authMe() {
-      this.httpClient
-          .get<IGeneralResponse<{ user: IUser }>>('http://localhost:8000/server/api/auth/me')
-          .pipe(
-              map(({ data }) => {
-                  if (!data) return null;
-                  return data.user;
-              }),
-              catchError(() => of(null)),
-              filter(Boolean),
-              tap((user) => {
-                  this.authUserId = user.id;
-                  this.authUser = user;
-                  this.balanceService.balance.set(user.balance);
-              }),
-          )
-          .subscribe();
+    this.httpClient
+      .get<IGeneralResponse<{ user: IUser }>>('http://localhost:8000/server/api/auth/me')
+      .pipe(
+        map(({ data }) => {
+          if (!data) return null;
+          return data.user;
+        }),
+        catchError(() => of(null)),
+        filter(Boolean),
+        tap((user) => {
+          this.authUserId = user.id;
+          this.authUser = user;
+          this.balanceService.balance.set(user.balance);
+        }),
+      )
+      .subscribe();
   }
 
   exportCSV() {
@@ -601,7 +589,6 @@ export class Events implements OnInit {
   }
 
   ngOnInit() {
-    this.loadDemoData();
     this.getEvents();
   }
 
@@ -679,14 +666,6 @@ export class Events implements OnInit {
       );
   }
 
-  loadDemoData() {
-    this.productService.getProducts().then((data) => {
-      this.products.set(data);
-    });
-
-    this.exportColumns = this.cols.map((col) => ({ title: col.header, dataKey: col.field }));
-  }
-
   onGlobalFilter(event: Event) {
     const inputEl = event.target as HTMLInputElement;
     this.searchValue.setValue(inputEl.value);
@@ -695,7 +674,6 @@ export class Events implements OnInit {
   openNew() {
     this.getClubs().subscribe(() => {
       this.headerDialog.set('Create event');
-      this.product = {};
       this.submitted = false;
       this.productDialog = true;
     });
@@ -798,58 +776,57 @@ export class Events implements OnInit {
   }
 
   registerOnEvent() {
-      const event = this.selectedEvents?.[0];
-      this.confirmationService.confirm({
-          message: `Do you really want to register for the ${event?.event_name}?
+    const event = this.selectedEvents?.[0];
+    this.confirmationService.confirm({
+      message: `Do you really want to register for the ${event?.event_name}?
                     The registration fee is ${event?.ticket_price} ${event?.currency}`,
-          header: 'Confirm',
-          icon: 'pi pi-exclamation-triangle',
-          accept: () => {
-              if (event) {
-                  this.globalLoading.set(true);
-                  this.httpClient
-                      .post<IGeneralResponse<any>>(
-                          `http://localhost:8000/server/api/events/${event.event_id}/register`,
-                          null,
-                      )
-                      .pipe(
-                          delay(500),
-                          tap(({ success, message }) => {
-                              if (success) {
-                                  this.messageService.add({
-                                      severity: 'success',
-                                      summary: 'Successful',
-                                      detail: message,
-                                      life: 3000,
-                                  });
-                              }
-                          }),
-                          catchError((err: HttpErrorResponse) => {
-                              this.messageService.add({
-                                  severity: 'error',
-                                  summary: 'Error',
-                                  detail: err.error.message,
-                                  life: 4000,
-                              });
-                              return of(null);
-                          }),
-                          finalize(() => {
-                              this.globalLoading.set(false);
-                          }),
-                      )
-                      .subscribe(() => {
-                          const updatedEvent = this.events().find((item) => item.event_id === event.event_id);
+      header: 'Confirm',
+      icon: 'pi pi-exclamation-triangle',
+      accept: () => {
+        if (event) {
+          this.globalLoading.set(true);
+          this.httpClient
+            .post<IGeneralResponse<any>>(
+              `http://localhost:8000/server/api/events/${event.event_id}/register`,
+              null,
+            )
+            .pipe(
+              delay(500),
+              tap(({ success, message }) => {
+                if (success) {
+                  this.messageService.add({
+                    severity: 'success',
+                    summary: 'Successful',
+                    detail: message,
+                    life: 3000,
+                  });
+                }
+              }),
+              catchError((err: HttpErrorResponse) => {
+                this.messageService.add({
+                  severity: 'error',
+                  summary: 'Error',
+                  detail: err.error.message,
+                  life: 4000,
+                });
+                return of(null);
+              }),
+              finalize(() => {
+                this.globalLoading.set(false);
+              }),
+            )
+            .subscribe(() => {
+              const updatedEvent = this.events().find((item) => item.event_id === event.event_id);
 
-                          if (updatedEvent && this.authUserId) {
-                              updatedEvent.registered_count += 1;
-                              updatedEvent.participants.push(this.authUserId);
-                          }
-                          this.authMe();
-                      });
+              if (updatedEvent && this.authUserId) {
+                updatedEvent.registered_count += 1;
+                updatedEvent.participants.push(this.authUserId);
               }
-          },
-      });
-
+              this.authMe();
+            });
+        }
+      },
+    });
   }
 }
 

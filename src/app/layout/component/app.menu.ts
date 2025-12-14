@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { ConfirmationService, MenuItem, MenuItemCommandEvent } from 'primeng/api';
@@ -30,7 +30,7 @@ import { AuthService } from '@/pages/auth/auth.service';
     </ul>
   `,
 })
-export class AppMenu {
+export class AppMenu implements OnInit {
   model: MenuItem[] = [];
   private confirmationService = inject(ConfirmationService);
   private router = inject(Router);
@@ -74,46 +74,6 @@ export class AppMenu {
               });
             },
           },
-          // {
-          //   label: 'Error',
-          //   icon: 'pi pi-fw pi-times-circle',
-          //   routerLink: ['/auth/error'],
-          // },
-          // {
-          //   label: 'Access Denied',
-          //   icon: 'pi pi-fw pi-lock',
-          //   routerLink: ['/auth/access'],
-          // },
-          // {
-          //   label: 'Crud',
-          //   icon: 'pi pi-fw pi-pencil',
-          //   routerLink: ['/pages/crud'],
-          // },
-        ],
-      },
-      {
-        label: 'UI Components',
-        items: [
-          { label: 'Form Layout', icon: 'pi pi-fw pi-id-card', routerLink: ['/uikit/formlayout'] },
-          { label: 'Input', icon: 'pi pi-fw pi-check-square', routerLink: ['/uikit/input'] },
-          {
-            label: 'Button',
-            icon: 'pi pi-fw pi-mobile',
-            class: 'rotated-icon',
-            routerLink: ['/uikit/button'],
-          },
-          { label: 'Table', icon: 'pi pi-fw pi-table', routerLink: ['/uikit/table'] },
-          { label: 'List', icon: 'pi pi-fw pi-list', routerLink: ['/uikit/list'] },
-          { label: 'Tree', icon: 'pi pi-fw pi-share-alt', routerLink: ['/uikit/tree'] },
-          { label: 'Panel', icon: 'pi pi-fw pi-tablet', routerLink: ['/uikit/panel'] },
-          { label: 'Overlay', icon: 'pi pi-fw pi-clone', routerLink: ['/uikit/overlay'] },
-          { label: 'Media', icon: 'pi pi-fw pi-image', routerLink: ['/uikit/media'] },
-          { label: 'Menu', icon: 'pi pi-fw pi-bars', routerLink: ['/uikit/menu'] },
-          { label: 'Message', icon: 'pi pi-fw pi-comment', routerLink: ['/uikit/message'] },
-          { label: 'File', icon: 'pi pi-fw pi-file', routerLink: ['/uikit/file'] },
-          { label: 'Chart', icon: 'pi pi-fw pi-chart-bar', routerLink: ['/uikit/charts'] },
-          { label: 'Timeline', icon: 'pi pi-fw pi-calendar', routerLink: ['/uikit/timeline'] },
-          { label: 'Misc', icon: 'pi pi-fw pi-circle', routerLink: ['/uikit/misc'] },
         ],
       },
     ];

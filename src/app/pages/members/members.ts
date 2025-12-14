@@ -18,7 +18,6 @@ import { TagModule } from 'primeng/tag';
 import { InputIconModule } from 'primeng/inputicon';
 import { IconFieldModule } from 'primeng/iconfield';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
-import { Product, ProductService } from '../service/product.service';
 import { HttpClient } from '@angular/common/http';
 import { IGeneralResponse } from '@/pages/auth/login';
 import {
@@ -28,9 +27,7 @@ import {
   filter,
   finalize,
   map,
-  skip,
   switchMap,
-  take,
   tap,
 } from 'rxjs/operators';
 import { debounceTime, of } from 'rxjs';
@@ -90,17 +87,7 @@ interface ExportColumn {
       <ng-template #start>
         <p-button
           *appHasPermission="{
-             role: authUser?.role,
-          }"
-          label="New"
-          icon="pi pi-plus"
-          severity="secondary"
-          class="mr-2"
-          (onClick)="openNew()"
-        />
-        <p-button
-          *appHasPermission="{
-             role: authUser?.role,
+            role: authUser?.role,
           }"
           severity="secondary"
           label="Delete"
@@ -160,7 +147,7 @@ interface ExportColumn {
           <tr>
             <th
               *appHasPermission="{
-                 role: authUser?.role,
+                role: authUser?.role,
               }"
               style="width: 3rem"
             >
@@ -179,14 +166,14 @@ interface ExportColumn {
               <p-sortIcon field="events_registered_count" />
             </th>
             <th
-                pSortableColumn="user_balance"
+              pSortableColumn="user_balance"
               style="min-width:10rem"
               *appHasPermission="{
-                 role: authUser?.role,
+                role: authUser?.role,
               }"
             >
               Balance
-                <p-sortIcon field="user_balance" />
+              <p-sortIcon field="user_balance" />
             </th>
             <th style="min-width: 12rem"></th>
           </tr>
@@ -233,7 +220,7 @@ interface ExportColumn {
             </td>
             <td
               *appHasPermission="{
-                 role: authUser?.role,
+                role: authUser?.role,
               }"
             >
               {{ member.user_balance }} USD
@@ -241,17 +228,7 @@ interface ExportColumn {
             <td>
               <p-button
                 *appHasPermission="{
-                   role: authUser?.role,
-                }"
-                icon="pi pi-pencil"
-                class="mr-2"
-                [rounded]="true"
-                [outlined]="true"
-                (click)="editProduct(product)"
-              />
-              <p-button
-                *appHasPermission="{
-                   role: authUser?.role,
+                  role: authUser?.role,
                 }"
                 icon="pi pi-trash"
                 severity="danger"
@@ -264,175 +241,12 @@ interface ExportColumn {
         </ng-template>
       </p-table>
     }
-
-    <p-dialog
-      [(visible)]="productDialog"
-      [style]="{ width: '450px' }"
-      [header]="headerDialog()"
-      [modal]="true"
-    >
-      <ng-template #content>
-        <div class="flex flex-col gap-6">
-          <img
-            [src]="'https://primefaces.org/cdn/primeng/images/demo/product/' + product.image"
-            [alt]="product.image"
-            class="block m-auto pb-4"
-            *ngIf="product.image"
-          />
-          <div>
-            <label
-              for="name"
-              class="block font-bold mb-3"
-              >Name</label
-            >
-            <input
-              type="text"
-              pInputText
-              id="name"
-              [(ngModel)]="product.name"
-              required
-              autofocus
-              fluid
-            />
-            <small
-              class="text-red-500"
-              *ngIf="submitted && !product.name"
-              >Name is required.</small
-            >
-          </div>
-          <div>
-            <label
-              for="description"
-              class="block font-bold mb-3"
-              >Description</label
-            >
-            <textarea
-              id="description"
-              pTextarea
-              [(ngModel)]="product.description"
-              required
-              rows="3"
-              cols="20"
-              fluid
-            ></textarea>
-          </div>
-
-          <div>
-            <label
-              for="inventoryStatus"
-              class="block font-bold mb-3"
-              >Inventory Status</label
-            >
-            <p-select
-              [(ngModel)]="product.inventoryStatus"
-              inputId="inventoryStatus"
-              [options]="statuses"
-              optionLabel="label"
-              optionValue="label"
-              placeholder="Select a Status"
-              fluid
-            />
-          </div>
-
-          <div>
-            <span class="block font-bold mb-4">Category</span>
-            <div class="grid grid-cols-12 gap-4">
-              <div class="flex items-center gap-2 col-span-6">
-                <p-radiobutton
-                  id="category1"
-                  name="category"
-                  value="Accessories"
-                  [(ngModel)]="product.category"
-                />
-                <label for="category1">Accessories</label>
-              </div>
-              <div class="flex items-center gap-2 col-span-6">
-                <p-radiobutton
-                  id="category2"
-                  name="category"
-                  value="Clothing"
-                  [(ngModel)]="product.category"
-                />
-                <label for="category2">Clothing</label>
-              </div>
-              <div class="flex items-center gap-2 col-span-6">
-                <p-radiobutton
-                  id="category3"
-                  name="category"
-                  value="Electronics"
-                  [(ngModel)]="product.category"
-                />
-                <label for="category3">Electronics</label>
-              </div>
-              <div class="flex items-center gap-2 col-span-6">
-                <p-radiobutton
-                  id="category4"
-                  name="category"
-                  value="Fitness"
-                  [(ngModel)]="product.category"
-                />
-                <label for="category4">Fitness</label>
-              </div>
-            </div>
-          </div>
-
-          <div class="grid grid-cols-12 gap-4">
-            <div class="col-span-6">
-              <label
-                for="price"
-                class="block font-bold mb-3"
-                >Price</label
-              >
-              <p-inputnumber
-                id="price"
-                [(ngModel)]="product.price"
-                mode="currency"
-                currency="USD"
-                locale="en-US"
-                fluid
-              />
-            </div>
-            <div class="col-span-6">
-              <label
-                for="quantity"
-                class="block font-bold mb-3"
-                >Quantity</label
-              >
-              <p-inputnumber
-                id="quantity"
-                [(ngModel)]="product.quantity"
-                fluid
-              ></p-inputnumber>
-            </div>
-          </div>
-        </div>
-      </ng-template>
-
-      <ng-template #footer>
-        <p-button
-          label="Cancel"
-          icon="pi pi-times"
-          text
-          (click)="hideDialog()"
-        />
-        <p-button
-          label="Save"
-          icon="pi pi-check"
-          (click)="saveProduct()"
-        />
-      </ng-template>
-    </p-dialog>
-
     <p-confirmdialog [style]="{ width: '450px' }"></p-confirmdialog>
   `,
-  providers: [MessageService, ProductService, ConfirmationService],
+  providers: [MessageService, ConfirmationService],
 })
 export class Members implements OnInit {
   productDialog: boolean = false;
-
-  products = signal<Product[]>([]);
-
-  product!: Product;
 
   selectedMembers!: UserReportRecord[] | null;
 
@@ -441,8 +255,6 @@ export class Members implements OnInit {
   statuses!: any[];
 
   @ViewChild('dt') dt!: Table;
-
-  exportColumns!: ExportColumn[];
 
   cols = [
     {
@@ -493,7 +305,6 @@ export class Members implements OnInit {
   headerDialog = signal('');
 
   constructor(
-    private productService: ProductService,
     private messageService: MessageService,
     private confirmationService: ConfirmationService,
   ) {
@@ -543,7 +354,6 @@ export class Members implements OnInit {
   }
 
   ngOnInit() {
-    this.loadDemoData();
     this.getMembers();
   }
 
@@ -567,20 +377,6 @@ export class Members implements OnInit {
       .subscribe((resp) => this.members.set(resp));
   }
 
-  loadDemoData() {
-    this.productService.getProducts().then((data) => {
-      this.products.set(data);
-    });
-
-    this.statuses = [
-      { label: 'INSTOCK', value: 'instock' },
-      { label: 'LOWSTOCK', value: 'lowstock' },
-      { label: 'OUTOFSTOCK', value: 'outofstock' },
-    ];
-
-    this.exportColumns = this.cols.map((col) => ({ title: col.header, dataKey: col.field }));
-  }
-
   searchValue = new FormControl<string>('', { nonNullable: true });
 
   onGlobalFilter(event: Event) {
@@ -590,14 +386,12 @@ export class Members implements OnInit {
 
   openNew() {
     this.headerDialog.set('Create member');
-    this.product = {};
     this.submitted = false;
     this.productDialog = true;
   }
 
-  editProduct(product: Product) {
+  editProduct(product: any) {
     this.headerDialog.set('Edit member');
-    this.product = { ...product };
     this.productDialog = true;
   }
 
@@ -676,55 +470,9 @@ export class Members implements OnInit {
     });
   }
 
-  findIndexById(id: string): number {
-    let index = -1;
-    for (let i = 0; i < this.products().length; i++) {
-      if (this.products()[i].id === id) {
-        index = i;
-        break;
-      }
-    }
-
-    return index;
-  }
-
-  createId(): string {
-    let id = '';
-    var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    for (var i = 0; i < 5; i++) {
-      id += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return id;
-  }
-
   saveProduct() {
+    this.productDialog = false;
     this.submitted = true;
-    let _products = this.products();
-    if (this.product.name?.trim()) {
-      if (this.product.id) {
-        _products[this.findIndexById(this.product.id)] = this.product;
-        this.products.set([..._products]);
-        this.messageService.add({
-          severity: 'success',
-          summary: 'Successful',
-          detail: 'Product Updated',
-          life: 3000,
-        });
-      } else {
-        this.product.id = this.createId();
-        this.product.image = 'product-placeholder.svg';
-        this.messageService.add({
-          severity: 'success',
-          summary: 'Successful',
-          detail: 'Product Created',
-          life: 3000,
-        });
-        this.products.set([..._products, this.product]);
-      }
-
-      this.productDialog = false;
-      this.product = {};
-    }
   }
 }
 

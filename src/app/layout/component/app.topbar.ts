@@ -3,13 +3,10 @@ import { MenuItem } from 'primeng/api';
 import { RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { StyleClassModule } from 'primeng/styleclass';
-import { AppConfigurator } from './app.configurator';
 import { LayoutService } from '../service/layout.service';
-import { Avatar } from 'primeng/avatar';
-import { OverlayBadge } from 'primeng/overlaybadge';
 import { IGeneralResponse } from '@/pages/auth/login';
 import { IUser } from '@/pages/events/events';
-import { catchError, delay, filter, finalize, map, tap } from 'rxjs/operators';
+import { catchError, filter, map, tap } from 'rxjs/operators';
 import { of } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
 import { BalanceService } from '@/pages/service/balance-service';
@@ -17,7 +14,7 @@ import { BalanceService } from '@/pages/service/balance-service';
 @Component({
   selector: 'app-topbar',
   standalone: true,
-  imports: [RouterModule, CommonModule, StyleClassModule, AppConfigurator, Avatar, OverlayBadge],
+  imports: [RouterModule, CommonModule, StyleClassModule],
   template: ` <div class="layout-topbar">
     <div class="layout-topbar-logo-container">
       <button
@@ -83,20 +80,6 @@ import { BalanceService } from '@/pages/service/balance-service';
             }"
           ></i>
         </button>
-        <div class="relative">
-          <button
-            class="layout-topbar-action layout-topbar-action-highlight"
-            pStyleClass="@next"
-            enterFromClass="hidden"
-            enterActiveClass="animate-scalein"
-            leaveToClass="hidden"
-            leaveActiveClass="animate-fadeout"
-            [hideOnOutsideClick]="true"
-          >
-            <i class="pi pi-palette"></i>
-          </button>
-          <app-configurator />
-        </div>
       </div>
 
       <button
@@ -128,7 +111,6 @@ import { BalanceService } from '@/pages/service/balance-service';
         </div>
       </div>
       <div class="balance flex gap-6 ml-auto items-center pr-2">
-
         <div style="color: var(--color-yellow-500)">
           + {{ balanceService.balance() }}
           {{ this.authUser()?.currency }}

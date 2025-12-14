@@ -3,11 +3,10 @@ import { RippleModule } from 'primeng/ripple';
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { CommonModule } from '@angular/common';
-import { Product, ProductService } from '../../service/product.service';
 import { HttpClient } from '@angular/common/http';
 import { IGeneralResponse } from '@/pages/auth/login';
 import { catchError, delay, finalize, map } from 'rxjs/operators';
-import { debounceTime, of } from 'rxjs';
+import { of } from 'rxjs';
 import { Skeleton } from 'primeng/skeleton';
 import { Tag } from 'primeng/tag';
 
@@ -69,7 +68,7 @@ import { Tag } from 'primeng/tag';
       </p-table>
     }
   </div>`,
-  providers: [ProductService],
+  providers: [],
 })
 export class RecentSalesWidget implements OnInit {
   clubs: ClubRecord[] = [];
