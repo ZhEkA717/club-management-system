@@ -45,6 +45,7 @@ import { DatePickerModule } from 'primeng/datepicker';
 import { MultiSelectModule } from 'primeng/multiselect';
 import { ProgressSpinner } from 'primeng/progressspinner';
 import { BlockUI } from 'primeng/blockui';
+import { HasPermissionDirective } from '@/pages/events/has-permission.directive';
 
 interface Column {
   field: string;
@@ -86,6 +87,7 @@ interface ExportColumn {
     ProgressSpinner,
     ReactiveFormsModule,
     BlockUI,
+    HasPermissionDirective,
   ],
   template: `
     <p-toast></p-toast>
@@ -98,6 +100,9 @@ interface ExportColumn {
     <p-toolbar styleClass="mb-6">
       <ng-template #start>
         <p-button
+          *appHasPermission="{
+            role: authUser!.role,
+          }"
           label="New"
           icon="pi pi-plus"
           severity="secondary"
@@ -114,6 +119,10 @@ interface ExportColumn {
           [disabled]="!selectedEvents || selectedEvents.length !== 1"
         />
         <p-button
+          *appHasPermission="{
+            role: authUser?.role,
+
+          }"
           severity="secondary"
           label="Delete"
           icon="pi pi-trash"
@@ -186,7 +195,11 @@ interface ExportColumn {
           let-event
         >
           <tr
-            [ngStyle]="{'background-color': event.participants.includes(authUserId)  ? 'rgba(33, 150, 243, 0.08)': ''}"
+            [ngStyle]="{
+              'background-color': event.participants?.includes(authUserId)
+                ? 'rgba(33, 150, 243, 0.08)'
+                : '',
+            }"
           >
             <td style="width: 3rem">
               <p-tableCheckbox [value]="event" />
@@ -234,6 +247,10 @@ interface ExportColumn {
             <td>{{ event.ticket_price }} {{ event.currency }}</td>
             <td>
               <p-button
+                *appHasPermission="{
+                  role: authUser?.role,
+
+                }"
                 [disabled]="event.event_status !== 'scheduled'"
                 icon="pi pi-pencil"
                 class="mr-2"
@@ -243,6 +260,9 @@ interface ExportColumn {
               />
 
               <p-button
+                *appHasPermission="{
+                  role: authUser?.role,
+                }"
                 icon="pi pi-trash"
                 severity="danger"
                 [rounded]="true"
@@ -522,6 +542,7 @@ export class Events implements OnInit {
     cureency: new FormControl<string | null>(null),
   });
 
+  authUser: IUser | null = null;
   authUserId: number | null = null;
 
   private httpClient = inject(HttpClient);
@@ -540,8 +561,9 @@ export class Events implements OnInit {
         }),
         catchError(() => of(null)),
         filter(Boolean),
-        tap(({ id }) => {
-          this.authUserId = id;
+        tap((user) => {
+          this.authUserId = user.id;
+          this.authUser = user;
         }),
       )
       .subscribe();
