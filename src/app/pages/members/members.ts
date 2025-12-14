@@ -173,10 +173,20 @@ interface ExportColumn {
             <th style="min-width:10rem">Status</th>
             <th
               pSortableColumn="events_registered_count"
-              style="min-width: 12rem"
+              style="max-width: 7rem"
             >
               Events
               <p-sortIcon field="events_registered_count" />
+            </th>
+            <th
+                pSortableColumn="user_balance"
+              style="min-width:10rem"
+              *appHasPermission="{
+                role: authUser!.role,
+              }"
+            >
+              Balance
+                <p-sortIcon field="user_balance" />
             </th>
             <th style="min-width: 12rem"></th>
           </tr>
@@ -221,6 +231,13 @@ interface ExportColumn {
             <td>
               {{ member.events_registered_count }}
             </td>
+            <td
+              *appHasPermission="{
+                role: authUser!.role,
+              }"
+            >
+              {{ member.user_balance }} USD
+            </td>
             <td>
               <p-button
                 *appHasPermission="{
@@ -251,7 +268,7 @@ interface ExportColumn {
     <p-dialog
       [(visible)]="productDialog"
       [style]="{ width: '450px' }"
-      header="Product Details"
+      [header]="headerDialog()"
       [modal]="true"
     >
       <ng-template #content>
@@ -473,6 +490,7 @@ export class Members implements OnInit {
   private httpClient = inject(HttpClient);
   private destroyRef = inject(DestroyRef);
   authUser: IUser | null = null;
+  headerDialog = signal('');
 
   constructor(
     private productService: ProductService,
@@ -571,12 +589,14 @@ export class Members implements OnInit {
   }
 
   openNew() {
+    this.headerDialog.set('Create member');
     this.product = {};
     this.submitted = false;
     this.productDialog = true;
   }
 
   editProduct(product: Product) {
+    this.headerDialog.set('Edit member');
     this.product = { ...product };
     this.productDialog = true;
   }
