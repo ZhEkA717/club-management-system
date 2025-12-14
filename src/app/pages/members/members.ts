@@ -37,6 +37,7 @@ import { HasPermissionDirective } from '@/pages/events/has-permission.directive'
 import { IUser } from '@/pages/events/events';
 import { BlockUI } from 'primeng/blockui';
 import { ProgressSpinner } from 'primeng/progressspinner';
+import { BASE_URL } from '../../../constants';
 
 interface Column {
   field: string;
@@ -131,7 +132,6 @@ interface ExportColumn {
             <p-iconfield>
               <p-inputicon styleClass="pi pi-search" />
               <input
-                style="width: 300px"
                 pInputText
                 type="text"
                 (input)="onGlobalFilter($event)"
@@ -309,7 +309,7 @@ export class Members implements OnInit {
     private confirmationService: ConfirmationService,
   ) {
     this.httpClient
-      .get<IGeneralResponse<{ user: IUser }>>('http://localhost:8000/server/api/auth/me')
+      .get<IGeneralResponse<{ user: IUser }>>(`http://${BASE_URL}/server/api/auth/me`)
       .pipe(
         map(({ data }) => {
           if (!data) return null;
@@ -334,7 +334,7 @@ export class Members implements OnInit {
               IGeneralResponse<{
                 users: UserReportRecord[];
               }>
-            >(`http://localhost:8000/server/api/members/search?query=${value}`)
+            >(`http://${BASE_URL}/server/api/members/search?query=${value}`)
             .pipe(
               delay(500),
               map(({ data }) => {
@@ -364,7 +364,7 @@ export class Members implements OnInit {
         IGeneralResponse<{
           users: UserReportRecord[];
         }>
-      >('http://localhost:8000/server/api/reports/users-detailed')
+      >(`http://${BASE_URL}/server/api/reports/users-detailed`)
       .pipe(
         delay(500),
         map(({ data }) => {
@@ -403,7 +403,7 @@ export class Members implements OnInit {
       accept: () => {
         this.globalLoading.set(true);
         this.httpClient
-          .post('http://localhost:8000/server/api/members/multiple-delete', {
+          .post(`http://${BASE_URL}/server/api/members/multiple-delete`, {
             user_ids: this.selectedMembers?.map((item) => item.user_id) || [],
           })
           .pipe(
@@ -440,7 +440,7 @@ export class Members implements OnInit {
       accept: () => {
         this.globalLoading.set(true);
         this.httpClient
-          .delete(`http://localhost:8000/server/api/members/${member.user_id}`)
+          .delete(`http://${BASE_URL}/server/api/members/${member.user_id}`)
           .pipe(
             delay(500),
             catchError(() => of(null)),

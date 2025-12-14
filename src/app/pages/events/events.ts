@@ -46,6 +46,7 @@ import { ProgressSpinner } from 'primeng/progressspinner';
 import { BlockUI } from 'primeng/blockui';
 import { HasPermissionDirective } from '@/pages/events/has-permission.directive';
 import { BalanceService } from '@/pages/service/balance-service';
+import { BASE_URL } from '../../../constants';
 
 interface ExportColumn {
   title: string;
@@ -158,7 +159,6 @@ interface ExportColumn {
             <p-iconfield>
               <p-inputicon styleClass="pi pi-search" />
               <input
-                style="width: 300px"
                 pInputText
                 type="text"
                 (input)="onGlobalFilter($event)"
@@ -550,7 +550,7 @@ export class Events implements OnInit {
               IGeneralResponse<{
                 events: EventReport[];
               }>
-            >(`http://localhost:8000/server/api/events/search?query=${value}`)
+            >(`http://${BASE_URL}/server/api/events/search?query=${value}`)
             .pipe(
               delay(500),
               map(({ data }) => {
@@ -567,7 +567,7 @@ export class Events implements OnInit {
 
   authMe() {
     this.httpClient
-      .get<IGeneralResponse<{ user: IUser }>>('http://localhost:8000/server/api/auth/me')
+      .get<IGeneralResponse<{ user: IUser }>>(`http://${BASE_URL}/server/api/auth/me`)
       .pipe(
         map(({ data }) => {
           if (!data) return null;
@@ -596,7 +596,7 @@ export class Events implements OnInit {
     const form = this.form.value;
     this.globalLoading.set(true);
     return this.httpClient
-      .post('http://localhost:8000/server/api/events', {
+      .post(`http://${BASE_URL}/server/api/events`, {
         title: form.eventName,
         club_id: form.clubName,
         event_date: `${this.datePipe.transform(form.date, 'yyyy-MM-dd')} ${this.datePipe.transform(form.date, 'hh:mm:ss')}`,
@@ -617,7 +617,7 @@ export class Events implements OnInit {
     const form = this.form.value;
     this.globalLoading.set(true);
     return this.httpClient
-      .patch(`http://localhost:8000/server/api/events/${form.id}`, {
+      .patch(`http://${BASE_URL}/server/api/events/${form.id}`, {
         title: form.eventName,
         club_id: form.clubName,
         event_date: `${this.datePipe.transform(form.date, 'yyyy-MM-dd')} ${this.datePipe.transform(form.date, 'hh:mm:ss')}`,
@@ -637,7 +637,7 @@ export class Events implements OnInit {
   getEvents() {
     this.loading.set(true);
     this.httpClient
-      .get<IGeneralResponse<EventReport[]>>('http://localhost:8000/server/api/events/report')
+      .get<IGeneralResponse<EventReport[]>>(`http://${BASE_URL}/server/api/events/report`)
       .pipe(
         delay(500),
         map(({ data }) => {
@@ -653,7 +653,7 @@ export class Events implements OnInit {
   getClubs() {
     this.globalLoading.set(true);
     return this.httpClient
-      .get<IGeneralResponse<{ clubs: Club[] }>>('http://localhost:8000/server/api/clubs')
+      .get<IGeneralResponse<{ clubs: Club[] }>>(`http://${BASE_URL}/server/api/clubs`)
       .pipe(
         delay(500),
         map(({ data }) => {
@@ -707,7 +707,7 @@ export class Events implements OnInit {
       accept: () => {
         this.globalLoading.set(true);
         this.httpClient
-          .post('http://localhost:8000/server/api/events/delete-multiple', {
+          .post(`http://${BASE_URL}/server/api/events/delete-multiple`, {
             event_ids: [...(this.selectedEvents?.map((item) => item.event_id) || [])],
           })
           .pipe(
@@ -744,7 +744,7 @@ export class Events implements OnInit {
       accept: () => {
         this.globalLoading.set(true);
         this.httpClient
-          .delete(`http://localhost:8000/server/api/events/${event.event_id}`)
+          .delete(`http://${BASE_URL}/server/api/events/${event.event_id}`)
           .pipe(
             delay(500),
             catchError(() => of(null)),
@@ -787,7 +787,7 @@ export class Events implements OnInit {
           this.globalLoading.set(true);
           this.httpClient
             .post<IGeneralResponse<any>>(
-              `http://localhost:8000/server/api/events/${event.event_id}/register`,
+              `http://${BASE_URL}/server/api/events/${event.event_id}/register`,
               null,
             )
             .pipe(

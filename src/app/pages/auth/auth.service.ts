@@ -3,6 +3,7 @@ import { catchError, map, tap } from 'rxjs/operators';
 import { of } from 'rxjs';
 import { IGeneralResponse, User } from '@/pages/auth/login';
 import { HttpClient, HttpContext, HttpContextToken } from '@angular/common/http';
+import { BASE_URL } from '../../../constants';
 
 export const SKIP_AUTH = new HttpContextToken(() => false);
 
@@ -19,7 +20,7 @@ export class AuthService {
           user: User;
           token: string;
         }>
-      >('http://localhost:8000/server/api/auth/login', {
+      >(`http://${BASE_URL}/server/api/auth/login`, {
         email,
         password,
       }, )
@@ -49,7 +50,7 @@ export class AuthService {
           token: string;
         }>
       >(
-        'http://localhost:8000/server/api/auth/register',
+        `http://${BASE_URL}/server/api/auth/register`,
         {
           email,
           first_name: firstName,

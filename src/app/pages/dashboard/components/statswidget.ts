@@ -5,6 +5,7 @@ import { catchError, delay, finalize, map } from 'rxjs/operators';
 import { IGeneralResponse } from '@/pages/auth/login';
 import { of } from 'rxjs';
 import { Skeleton } from 'primeng/skeleton';
+import { BASE_URL } from '../../../../constants';
 
 @Component({
   standalone: true,
@@ -84,7 +85,7 @@ export class StatsWidget implements OnInit {
 
   ngOnInit(): void {
     this.httpClient
-      .get<IGeneralResponse<PlatformStats>>('http://localhost:8000/server/api/stats/platform')
+      .get<IGeneralResponse<PlatformStats>>(`http://${BASE_URL}/server/api/stats/platform`)
       .pipe(
         delay(500),
         map(({ data }) => {

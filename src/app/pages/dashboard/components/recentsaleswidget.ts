@@ -9,6 +9,7 @@ import { catchError, delay, finalize, map } from 'rxjs/operators';
 import { of } from 'rxjs';
 import { Skeleton } from 'primeng/skeleton';
 import { Tag } from 'primeng/tag';
+import { BASE_URL } from '../../../../constants';
 
 @Component({
   standalone: true,
@@ -79,7 +80,7 @@ export class RecentSalesWidget implements OnInit {
   ngOnInit() {
     this.httpClient
       .get<IGeneralResponse<{ clubs: ClubRecord[] }>>(
-        'http://localhost:8000/server/api/reports/clubs-summary',
+        `http://${BASE_URL}/server/api/reports/clubs-summary`,
       )
       .pipe(
         delay(500),

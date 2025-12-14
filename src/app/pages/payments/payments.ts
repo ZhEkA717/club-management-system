@@ -24,6 +24,7 @@ import { ProgressSpinner } from 'primeng/progressspinner';
 import { of } from 'rxjs';
 import { Skeleton } from 'primeng/skeleton';
 import { IUser } from '@/pages/events/events';
+import { BASE_URL } from '../../../constants';
 
 @Component({
   selector: 'app-payments',
@@ -374,7 +375,7 @@ export class Payments implements OnInit {
   getPayments() {
     this.loading.set(true);
     this.httpClient
-      .get<IGeneralResponse<{ user: IUser }>>('http://localhost:8000/server/api/auth/me')
+      .get<IGeneralResponse<{ user: IUser }>>(`http://${BASE_URL}/server/api/auth/me`)
       .pipe(
         map(({ data }) => {
           if (!data) return null;
@@ -383,7 +384,7 @@ export class Payments implements OnInit {
         catchError(() => of(null)),
         filter(Boolean),
         switchMap(({ role }) => {
-            const url = role === 'admin' ? 'http://localhost:8000/server/api/payments' : 'http://localhost:8000/server/api/payments/me';
+            const url = role === 'admin' ? `http://${BASE_URL}/server/api/payments` : `http://${BASE_URL}/server/api/payments/me`;
             return this.httpClient
                 .get<IGeneralResponse<IPayment[]>>(url)
                 .pipe(

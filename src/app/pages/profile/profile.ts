@@ -23,6 +23,7 @@ import { Avatar } from 'primeng/avatar';
 import { Skeleton } from 'primeng/skeleton';
 import { MessageService } from 'primeng/api';
 import { Toast } from 'primeng/toast';
+import { BASE_URL } from '../../../constants';
 
 @Component({
   selector: 'app-profile',
@@ -169,7 +170,7 @@ export class Profile {
   ) {
     this.globalLoading.set(true);
     this.httpClient
-      .get<IGeneralResponse<{ user: IUser }>>('http://localhost:8000/server/api/auth/me')
+      .get<IGeneralResponse<{ user: IUser }>>(`http://${BASE_URL}/server/api/auth/me`)
       .pipe(
         delay(500),
         map(({ data }) => {
@@ -195,7 +196,7 @@ export class Profile {
   updateUser() {
     this.globalLoading.set(true);
     this.httpClient
-      .patch('http://localhost:8000/server/api/members/' + this.authUser()?.id, {
+      .patch(`http://${BASE_URL}/server/api/members/` + this.authUser()?.id, {
         first_name: this.form.value.firstName,
         last_name: this.form.value.lastName,
         password: this.form.value.password,

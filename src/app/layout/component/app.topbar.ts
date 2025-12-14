@@ -10,6 +10,7 @@ import { catchError, filter, map, tap } from 'rxjs/operators';
 import { of } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
 import { BalanceService } from '@/pages/service/balance-service';
+import { BASE_URL } from '../../../constants';
 
 @Component({
   selector: 'app-topbar',
@@ -136,7 +137,7 @@ export class AppTopbar {
       }));
     }
     this.httpClient
-      .get<IGeneralResponse<{ user: IUser }>>('http://localhost:8000/server/api/auth/me')
+      .get<IGeneralResponse<{ user: IUser }>>(`http://${BASE_URL}/server/api/auth/me`)
       .pipe(
         map(({ data }) => {
           if (!data) return null;
